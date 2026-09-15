@@ -1,0 +1,21 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "1 Welcome", "x": 0, "y": 0, "w": 1280, "h": 720 },
+    { "file": "Flow.dc.html", "title": "2 The monthly flow", "x": 1400, "y": 0, "w": 1280, "h": 720 },
+    { "file": "SignIn.dc.html", "title": "3 Signing in", "x": 2800, "y": 0, "w": 1280, "h": 720 },
+    { "file": "StatementReady.dc.html", "title": "4 Your statement is ready", "x": 4200, "y": 0, "w": 1280, "h": 720 },
+    { "file": "Importing.dc.html", "title": "5 Importing", "x": 0, "y": 880, "w": 1280, "h": 720 },
+    { "file": "EditorTour.dc.html", "title": "6 The reconciliation screen", "x": 1400, "y": 880, "w": 1280, "h": 720 },
+    { "file": "CodesDescriptions.dc.html", "title": "7 Codes and descriptions", "x": 2800, "y": 880, "w": 1280, "h": 720 },
+    { "file": "PaymentsRefunds.dc.html", "title": "8 Payments, refunds and fees", "x": 4200, "y": 880, "w": 1280, "h": 720 },
+    { "file": "ReceiptsFolder.dc.html", "title": "9 Receipts folder", "x": 0, "y": 1760, "w": 1280, "h": 720 },
+    { "file": "ReceiptReview.dc.html", "title": "10 Receipts to review", "x": 1400, "y": 1760, "w": 1280, "h": 720 },
+    { "file": "BalanceCheck.dc.html", "title": "11 Balance check", "x": 2800, "y": 1760, "w": 1280, "h": 720 },
+    { "file": "SubmitStatuses.dc.html", "title": "12 Submit", "x": 4200, "y": 1760, "w": 1280, "h": 720 },
+    { "file": "SentBack.dc.html", "title": "13 Sent back", "x": 0, "y": 2640, "w": 1280, "h": 720 },
+    { "file": "StaffRecs.dc.html", "title": "14 Finance: Staff Recs", "x": 1400, "y": 2640, "w": 1280, "h": 720 },
+    { "file": "ReviewApprove.dc.html", "title": "15 Finance and ED approval", "x": 2800, "y": 2640, "w": 1280, "h": 720 },
+    { "file": "ReportsHelp.dc.html", "title": "16 Reports and help", "x": 4200, "y": 2640, "w": 1280, "h": 720 }
+  ],
+  "launch": { "view": "canvas" }
+}

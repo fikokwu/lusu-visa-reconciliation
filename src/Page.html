@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LUSU Visa Reconciliation</title>
+  <? var __logo = logoDataUri(); ?>
+  <? if (__logo) { ?><link rel="icon" href="<?!= __logo ?>"><? } ?>
+  <?!= include('Stylesheet'); ?>
+  <? if (__logo) { ?>
+  <script>window.__LOGO_URL = '<?!= __logo ?>';</script>
+  <? } ?>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-wordmark" id="topbarWordmark">LUSU</span>
+    <img class="topbar-logo" id="topbarLogo" alt="LUSU" style="display:none">
+    <span class="topbar-title">Visa Reconciliation</span>
+  </div>
+  <span class="topbar-user" id="topbarUser">Loading...</span>
+</header>
+
+<!-- SAVING INDICATOR -->
+<div id="savingIndicator" class="saving-indicator hidden">Saving…</div>
+
+<!-- NAV TABS (Finance/ED only) -->
+<nav class="subnav" id="subnav">
+  <button class="subnav-btn active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="subnav-btn" id="staffRecsNavBtn" style="display:none" onclick="showView('staffRecs')">Staff Recs</button>
+  <button class="subnav-btn" id="reportsNavBtn" style="display:none" onclick="showView('reports')">Reports</button>
+  <button class="subnav-btn" id="usersNavBtn" style="display:none" onclick="showView('users')">Users</button>
+</nav>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" class="overlay hidden">
+  <div class="overlay-box">
+    <img class="overlay-logo" id="overlayLogo" alt="LUSU" style="display:none">
+    <div class="spinner"></div>
+    <p id="loadingMsg">Loading…</p>
+  </div>
+</div>
+
+<!-- ================================================
+     VIEW 1 — DASHBOARD
+================================================ -->
+<div id="viewDashboard" class="view">
+  <div class="container">
+    <div class="stat-cards" id="statCards">
+      <div class="stat-card"><div class="stat-label">Total charges</div><div class="stat-value" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">HST</div><div class="stat-value" id="statHst">—</div></div>
+      <div class="stat-card"><div class="stat-label">Auto-coded</div><div class="stat-value" id="statAutoCoded">—</div></div>
+      <div class="stat-card"><div class="stat-label">Needs review</div><div class="stat-value" id="statNeedsReview">—</div></div>
+    </div>
+
+    <div id="receiptsFolderHint" class="hint-banner hidden">
+      <strong>Tip:</strong> Save receipts as you go — drop photos or PDFs into
+      <a id="receiptsFolderLink" href="#" target="_blank" rel="noopener">your receipts folder</a>
+      anytime. They'll be scanned and matched automatically when you work on your reconciliation.
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h2>Reconciliations</h2>
+      </div>
+
+      <div id="availableStatements" class="hidden"></div>
+
+      <div id="reconTable">
+        <p class="empty-state">No reconciliations yet. Your statements will appear above when ready to import.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================
+     VIEW 1b — STAFF RECS (Finance/ED only)
+================================================ -->
+<div id="viewStaffRecs" class="view hidden">
+  <div class="container">
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-label">Total charges</div><div class="stat-value" id="staffStatTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">HST</div><div class="stat-value" id="staffStatHst">—</div></div>
+      <div class="stat-card"><div class="stat-label">Auto-coded</div><div class="stat-value" id="staffStatAutoCoded">—</div></div>
+      <div class="stat-card"><div class="stat-label">Needs review</div><div class="stat-value" id="staffStatNeedsReview">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h2>Staff reconciliations</h2>
+      </div>
+      <div id="staffReconTable">
+        <p class="empty-state">No staff reconciliations yet.</p>
+      </div>
+    </div>
+
+    <div class="card" id="statementsOverviewCard">
+      <p class="empty-state">Loading statements overview…</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================
+     VIEW 2 — RECONCILIATION EDITOR
+================================================ -->
+<div id="viewEditor" class="view hidden">
+  <div class="container-wide">
+    <div class="breadcrumb">
+      <a href="#" onclick="showView('dashboard');return false">Dashboard</a>
+      <span> › </span>
+      <span id="editorMonth"></span>
+    </div>
+
+    <div class="editor-header">
+      <div class="editor-meta">
+        <span id="editorUser"></span>
+        <span id="editorStatusBadge"></span>
+        <span id="editorSavedAt" class="editor-saved-at"></span>
+      </div>
+      <div class="editor-actions">
+        <button class="btn-secondary" id="scanBtn" onclick="triggerDriveScan()">Scan Drive</button>
+        <a id="receiptsFolderBtn" class="btn-secondary" target="_blank" rel="noopener" style="display:none;text-decoration:none">Receipts folder ↗</a>
+        <a id="formatTemplateLink" class="btn-secondary" target="_blank" style="display:none;text-decoration:none">View LUSU format ↗</a>
+        <button class="btn-primary" id="submitBtn" onclick="submitRecon()">Submit for review</button>
+        <button class="btn-secondary" onclick="exportRecon()">Export</button>
+      </div>
+    </div>
+
+    <!-- Editor stat cards -->
+    <div class="stat-cards" id="editorStats">
+      <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="esTotal">0</div></div>
+      <div class="stat-card"><div class="stat-label">Coded</div><div class="stat-value" id="esCoded">0 of 0</div></div>
+      <div class="stat-card"><div class="stat-label">Receipts</div><div class="stat-value" id="esReceipts">0 of 0</div></div>
+      <div class="stat-card" id="esFlaggedCard"><div class="stat-label">Flagged</div><div class="stat-value" id="esFlagged">0</div></div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="filterTx('all', this)">All (<span id="tabAll">0</span>)</button>
+      <button class="tab-btn" onclick="filterTx('review', this)">Needs review (<span id="tabReview">0</span>)</button>
+      <button class="tab-btn" onclick="filterTx('receipt', this)">Missing receipt (<span id="tabReceipt">0</span>)</button>
+      <button class="tab-btn" id="tabDupBtn" style="display:none" onclick="filterTx('dup', this)">Duplicates (<span id="tabDup">0</span>)</button>
+    </div>
+
+    <!-- Transaction table -->
+    <div class="table-scroll">
+      <table class="tx-table" id="txTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Vendor</th><th>Description</th>
+            <th>Total</th><th>HST</th><th>Sub-total</th>
+            <th>Budget code</th><th>Receipt</th><th>Flag</th>
+          </tr>
+        </thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Receipts needing review (Sprint 3) -->
+    <div id="receiptReviewSection" class="card hidden">
+      <h3>Receipts needing review</h3>
+      <div id="receiptReviewList"></div>
+    </div>
+
+    <!-- Finance / ED action panel -->
+    <div id="approvalPanel" class="card hidden">
+      <h3>Review actions</h3>
+      <div id="duplicateWarning" class="warning-banner hidden"></div>
+      <div id="financePanel" class="hidden">
+        <label>Balance owing (from statement)</label>
+        <input type="number" id="bankTotal" class="input-field" step="0.01" placeholder="0.00">
+        <label>Notes</label>
+        <textarea id="financeNotes" class="input-field" rows="3"></textarea>
+        <div class="panel-actions">
+          <button class="btn-primary" onclick="financeApprove()">Approve & send to ED</button>
+          <button class="btn-danger" onclick="financeSendBack()">Send back to staff</button>
+        </div>
+      </div>
+      <div id="edPanel" class="hidden">
+        <label>Notes</label>
+        <textarea id="edNotes" class="input-field" rows="3"></textarea>
+        <div class="panel-actions">
+          <button class="btn-primary" onclick="edApprove()">Final approve</button>
+          <button class="btn-danger" onclick="edSendBack()">Send back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin status override (Finance/ED only, for testing) -->
+    <div id="adminOverride" class="card hidden" style="border-style: dashed;">
+      <h3 style="font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em;">Admin override — for testing</h3>
+      <p style="font-size: 12px; color: var(--muted); margin: 4px 0 12px;">Jump this reconciliation to any status to simulate the workflow without juggling accounts.</p>
+      <label>Set status to</label>
+      <select id="adminStatusSelect" class="input-field">
+        <option value="draft">draft</option>
+        <option value="submitted">submitted</option>
+        <option value="ed_review">ed_review</option>
+        <option value="approved">approved</option>
+        <option value="sent_back">sent_back</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:normal;margin-top:10px">
+        <input type="checkbox" id="adminSendEmails"> Also send notification email(s)
+      </label>
+      <div class="panel-actions">
+        <button class="btn-secondary" onclick="applyAdminOverride()">Apply override</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Variance bar -->
+  <div class="variance-bar">
+    <span>Previous balance: <strong id="vPrev">—</strong></span>
+    <span>Charges &amp; refunds: <strong id="vRecon">$0.00</strong></span>
+    <span>Payments: <strong id="vPayments">$0.00</strong></span>
+    <span>Balance owing: <strong id="vBank">—</strong></span>
+    <span>Variance: <strong id="vVariance">—</strong></span>
+  </div>
+</div>
+
+<!-- ================================================
+     VIEW 4 — REPORTS
+================================================ -->
+<div id="viewReports" class="view hidden">
+  <div class="container">
+    <h2>Reports</h2>
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="showReportTab('monthly', this)">Monthly summary</button>
+      <button class="tab-btn" onclick="showReportTab('ytd', this)">YTD by budget code</button>
+      <button class="tab-btn" onclick="showReportTab('staff', this)">Reconciliation history</button>
+    </div>
+    <div id="reportContent" class="card"></div>
+
+    <!-- Fiscal year-end close (Finance/ED only; unhidden in onUserLoaded) -->
+    <div id="fyCloseCard" class="card hidden" style="margin-top:16px">
+      <h3>Fiscal year-end</h3>
+      <p class="muted-note">Closes the fiscal year (May 1 – April 30): the year's statements, receipts
+        and approved reconciliations move into a year archive in Drive, the data moves to an archive
+        spreadsheet, and dashboard totals reset. Only runs once every reconciliation in the year is
+        approved. Safe to re-run if it's interrupted.</p>
+      <button class="btn-secondary" id="fyCloseBtn" onclick="startFiscalClose()">Close fiscal year…</button>
+      <div id="fyCloseResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     VIEW 5 — USERS (Finance + ED only)
+================================================ -->
+<div id="viewUsers" class="view hidden">
+  <div class="container">
+    <div class="card">
+      <div class="card-header-row">
+        <h2>Users</h2>
+        <button class="btn-primary" onclick="openAddUserModal()">+ Add user</button>
+      </div>
+      <div id="usersTable">
+        <p class="empty-state">Loading users…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User add/edit modal -->
+<div id="userModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3 id="userModalTitle">Add user</h3>
+    <label>Name</label>
+    <input type="text" id="userName" class="input-field" autocomplete="off">
+    <label>Email</label>
+    <input type="email" id="userEmail" class="input-field" autocomplete="off">
+    <label>Role</label>
+    <select id="userRole" class="input-field">
+      <option value="staff">Staff</option>
+      <option value="exec">Exec</option>
+      <option value="finance">Finance</option>
+      <option value="ed">Executive Director</option>
+    </select>
+    <label>Department suffix(es) — comma-separated, or "ALL"</label>
+    <input type="text" id="userSuffix" class="input-field" placeholder="e.g. 1200 or 1000,1500 or ALL" autocomplete="off">
+    <label>Drive folder ID (optional)</label>
+    <input type="text" id="userFolder" class="input-field" placeholder="Folder containing this user's receipts" autocomplete="off">
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:normal" id="userActiveRow">
+      <input type="checkbox" id="userActive" checked> Active
+    </label>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeUserModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveUser()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Override budget code modal -->
+<div id="overrideModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3>Use a different budget code</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">This code is outside your normal department. A reason is required and will be recorded in the audit log.</p>
+    <input type="text" id="overrideSearch" class="input-field" placeholder="Search codes…" oninput="filterOverrideCodes(this.value)" autocomplete="off" style="margin-bottom:8px">
+    <select id="overrideCodeSelect" size="7" class="override-code-list"></select>
+    <label>Reason (required)</label>
+    <textarea id="overrideReason" class="input-field" rows="2" placeholder="e.g. Conference travel charged to wrong card"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeOverrideModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveOverride()">Save override</button>
+    </div>
+  </div>
+</div>
+
+<?!= include('ClientScript'); ?>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Getting started</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Signing in</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; gap: 16px; align-items: flex-start;">
+          <span style="flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;">1</span>
+          <p style="margin: 0; font-size: 21px; line-height: 1.45;">Open the link in your welcome email, then bookmark it.</p>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: flex-start;">
+          <span style="flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;">2</span>
+          <p style="margin: 0; font-size: 21px; line-height: 1.45;">Sign in with your work Google account: <strong style="color: #0A2A5E;">@lusu.ca</strong>, <strong style="color: #0A2A5E;">@outpostpub.ca</strong> or <strong style="color: #0A2A5E;">@thestudycoffeehouse.ca</strong>.</p>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: flex-start;">
+          <span style="flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;">3</span>
+          <p style="margin: 0; font-size: 21px; line-height: 1.45;">Told it "could not detect which Google account" you're using? Open the link in an Incognito window, or switch accounts from your profile picture (top right).</p>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #EDF0F4; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px; color: #6B7A90;">From: LUSU Visa Reconciliation</div>
+          <div style="font-size: 17px; font-weight: 700; color: #1A2B45;">You've been added to LUSU Visa Reconciliation App</div>
+        </div>
+        <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 1.5;">
+          <p style="margin: 0;">Hi Alex,</p>
+          <p style="margin: 0;">You've been added to the LUSU Visa Reconciliation system as staff.</p>
+          <p style="margin: 0;">Sign in here to get started:<br><a href="#" style="font-weight: 600;">script.google.com/macros/s/…/exec</a></p>
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <div style="height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E6EC;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="lusu-logo.png" alt="LUSU" style="height: 32px; width: auto;">
+            <span style="font-size: 15px; font-weight: 600; color: #6B7A90; border-left: 1px solid #E2E6EC; padding-left: 14px;">Visa Reconciliation</span>
+          </div>
+          <span style="font-size: 13px; font-weight: 500; color: #6B7A90;">Alex · 1200</span>
+        </div>
+        <div style="padding: 0 20px; display: flex; gap: 4px;">
+          <span style="padding: 13px 16px; font-size: 14px; font-weight: 600; color: #0A2A5E; border-bottom: 3px solid #1CA0E3;">Dashboard</span>
+        </div>
+      </div>
+      <div style="font-size: 13px; color: #6B7A90;">Example: what you see once you're signed in.</div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>3</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

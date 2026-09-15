@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .panel { background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6B7A90; margin-top: 4px; }
+    .input { border: 1px solid #E2E6EC; border-radius: 7px; padding: 9px 11px; font-size: 14px; }
+    .point { margin: 0; font-size: 17px; line-height: 1.45; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 24px; background: #F4F6F9;">
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">For Finance and the ED</div>
+    <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Review and approve</h2>
+  </div>
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px;">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: #0A2A5E;">Finance <span style="padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; background: #1CA0E3; color: #FFFFFF;">Submitted</span></div>
+      <p class="point">Check each line and receipt. You can still correct budget codes.</p>
+      <p class="point">Balance owing is filled in from the statement. Confirm it, then approve or send back with notes.</p>
+      <div class="panel">
+        <div style="font-size: 16px; font-weight: 700; color: #0A2A5E;">Review actions</div>
+        <div class="lbl">Balance owing (from statement)</div>
+        <div class="input">438.10</div>
+        <div class="lbl">Notes</div>
+        <div class="input" style="color: #6B7A90;">All receipts attached.</div>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <span style="padding: 8px 16px; border-radius: 7px; font-size: 14px; font-weight: 600; background: #0A2A5E; color: #FFFFFF;">Approve &amp; send to ED</span>
+          <span style="padding: 8px 16px; border-radius: 7px; font-size: 14px; font-weight: 600; background: #C62828; color: #FFFFFF;">Send back to staff</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: #0A2A5E;">Executive Director <span style="padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; background: #0A2A5E; color: #FFFFFF;">Ed Review</span></div>
+      <p class="point">Give final approval, or send it back with notes.</p>
+      <p class="point">Approved reconciliations are filed in Approved Visa Recs, and the cardholder and Finance get an email.</p>
+      <div class="panel">
+        <div style="font-size: 16px; font-weight: 700; color: #0A2A5E;">Review actions</div>
+        <div class="lbl">Notes</div>
+        <div class="input" style="height: 64px; box-sizing: border-box;"></div>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <span style="padding: 8px 16px; border-radius: 7px; font-size: 14px; font-weight: 600; background: #0A2A5E; color: #FFFFFF;">Final approve</span>
+          <span style="padding: 8px 16px; border-radius: 7px; font-size: 14px; font-weight: 600; background: #C62828; color: #FFFFFF;">Send back</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>15</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

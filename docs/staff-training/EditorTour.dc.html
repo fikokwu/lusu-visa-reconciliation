@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .pin { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px #FFFFFF; }
+    .th { padding: 8px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6B7A90; text-align: left; white-space: nowrap; }
+    .td { padding: 7px 8px; border-top: 1px solid #EDF0F4; font-size: 12px; white-space: nowrap; }
+    .field { border: 1px solid #E2E6EC; border-radius: 5px; padding: 4px 7px; font-size: 12px; background: #FFFFFF; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 40px 60px 28px; display: flex; flex-direction: column; gap: 16px; background: #F4F6F9;">
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Your reconciliation</div>
+    <h2 style="margin: 0; font-size: 40px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">The reconciliation screen</h2>
+  </div>
+  <div style="flex-grow: 1; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 36px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 18px; font-size: 17px; line-height: 1.4;">
+      <div style="display: flex; gap: 12px;"><span style="flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">1</span><span><strong style="color: #0A2A5E;">Buttons.</strong> Scan Drive reads your receipts folder now. Submit sends it to Finance.</span></div>
+      <div style="display: flex; gap: 12px;"><span style="flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">2</span><span><strong style="color: #0A2A5E;">Progress.</strong> How many lines are coded, have receipts, or need a look.</span></div>
+      <div style="display: flex; gap: 12px;"><span style="flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">3</span><span><strong style="color: #0A2A5E;">Filters.</strong> Show only lines that need review or a receipt.</span></div>
+      <div style="display: flex; gap: 12px;"><span style="flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">4</span><span><strong style="color: #0A2A5E;">Each line.</strong> Description, budget code and receipt. An amber edge means check it.</span></div>
+      <div style="display: flex; gap: 12px;"><span style="flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0A2A5E; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">5</span><span><strong style="color: #0A2A5E;">Balance check.</strong> Variance should read $0.00.</span></div>
+    </div>
+    <div style="position: relative;">
+    <div style="background: #F4F6F9; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 12px; color: #6B7A90;"><span style="color: #1CA0E3; font-weight: 600;">Dashboard</span> › July 2026</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #0A2A5E;">Alex <span style="padding: 2px 9px; border-radius: 12px; font-size: 10px; font-weight: 700; background: #ECEFF3; color: #5A6B82;">Draft</span><span style="font-size: 11px; font-weight: 500; color: #6B7A90;">Saved · just now</span></div>
+          <div style="display: flex; gap: 6px;">
+            <span style="padding: 6px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #E7F4FC; color: #0A2A5E;">Scan Drive</span>
+            <span style="padding: 6px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #E7F4FC; color: #0A2A5E;">Receipts folder ↗</span>
+            <span style="padding: 6px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #0A2A5E; color: #FFFFFF;">Submit for review</span>
+            <span style="padding: 6px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #E7F4FC; color: #0A2A5E;">Export</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+          <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-top: 3px solid #1CA0E3; border-radius: 10px; padding: 9px 12px;"><div style="font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6B7A90;">Transactions</div><div style="font-size: 20px; font-weight: 700; color: #0A2A5E;">4</div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-top: 3px solid #1CA0E3; border-radius: 10px; padding: 9px 12px;"><div style="font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6B7A90;">Coded</div><div style="font-size: 20px; font-weight: 700; color: #0A2A5E;">3 of 3</div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-top: 3px solid #1CA0E3; border-radius: 10px; padding: 9px 12px;"><div style="font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6B7A90;">Receipts</div><div style="font-size: 20px; font-weight: 700; color: #0A2A5E;">2 of 3</div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-top: 3px solid #E65100; border-radius: 10px; padding: 9px 12px;"><div style="font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6B7A90;">Flagged</div><div style="font-size: 20px; font-weight: 700; color: #E65100;">1</div></div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #0A2A5E; color: #FFFFFF; border: 1px solid #0A2A5E;">All (4)</span>
+          <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #FFFFFF; color: #6B7A90; border: 1px solid #E2E6EC;">Needs review (1)</span>
+          <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #FFFFFF; color: #6B7A90; border: 1px solid #E2E6EC;">Missing receipt (1)</span>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead><tr style="background: #EEF2F7;"><th class="th">Date</th><th class="th">Vendor</th><th class="th">Description</th><th class="th">Total</th><th class="th">Budget code</th><th class="th">Receipt</th></tr></thead>
+            <tbody>
+              <tr><td class="td">2026-07-03</td><td class="td">STAPLES #123</td><td class="td"><span class="field">Event signage</span></td><td class="td">$45.20</td><td class="td"><span class="field">58000-1200 — Events</span></td><td class="td" style="color: #2E7D32; font-weight: 600;">✓ scan.pdf</td></tr>
+              <tr><td class="td">2026-07-09</td><td class="td">THE KEG STEAKHOUSE</td><td class="td"><span class="field">Outreach dinner</span></td><td class="td">$80.50</td><td class="td"><span class="field">58000-1200 — Events</span></td><td class="td" style="color: #2E7D32; font-weight: 600;">✓ scan.pdf</td></tr>
+              <tr style="box-shadow: inset 3px 0 0 #E65100;"><td class="td">2026-07-14</td><td class="td">CUSTOMINK</td><td class="td"><span class="field">Orientation shirts</span></td><td class="td">$312.40</td><td class="td"><span class="field">58041-1200 — Swag</span></td><td class="td" style="color: #C62828; font-weight: 600;">Attach</td></tr>
+              <tr><td class="td">2026-07-20</td><td class="td">PAYMENT - THANK YOU <span style="padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; background: #ECEFF3; color: #5A6B82;">payment</span></td><td class="td" style="color: #6B7A90;">PAYMENT - THANK YOU</td><td class="td">-$2,276.06</td><td class="td" style="color: #6B7A90;">No code needed</td><td class="td" style="color: #6B7A90;">Not needed</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border-top: 1px solid #E2E6EC; padding: 10px 16px; display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: #6B7A90;">
+        <span>Previous balance: <strong style="color: #0A2A5E; font-size: 12px;">$2,276.06</strong></span>
+        <span>Charges &amp; refunds: <strong style="color: #0A2A5E; font-size: 12px;">$438.10</strong></span>
+        <span>Payments: <strong style="color: #0A2A5E; font-size: 12px;">-$2,276.06</strong></span>
+        <span>Balance owing: <strong style="color: #0A2A5E; font-size: 12px;">$438.10</strong></span>
+        <span>Variance: <strong style="color: #2E7D32; font-size: 12px;">$0.00</strong></span>
+      </div>
+    </div>
+      <span class="pin" style="top: 41px; right: -31px;">1</span>
+      <span class="pin" style="top: 105px; left: -31px;">2</span>
+      <span class="pin" style="top: 157px; left: -31px;">3</span>
+      <span class="pin" style="top: 226px; left: -31px;">4</span>
+      <span class="pin" style="bottom: 5px; left: -31px;">5</span>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>6</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Overview</div>
+    <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">The monthly flow</h2>
+    <p style="margin: 0; font-size: 22px; line-height: 1.4; color: #6B7A90;">Your part is in navy. The app, Finance and the ED handle the rest.</p>
+  </div>
+  <figure style="margin: 0; flex-grow: 1; display: flex; flex-direction: column; gap: 10px;">
+    <svg role="img" aria-label="A reconciliation moves from the statement email, to you importing it, the app coding and attaching receipts, you submitting, Finance reviewing, and the ED giving final approval. Finance can send it back to you." viewBox="0 0 1136 470" style="width: 100%; height: 420px;">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6B7A90"></path></marker>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#C62828"></path></marker>
+      </defs>
+      <g font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+        <rect x="0" y="20" width="1136" height="100" rx="10" fill="#FFFFFF" stroke="#E2E6EC"></rect>
+        <rect x="0" y="130" width="1136" height="100" rx="10" fill="#EEF2F7"></rect>
+        <rect x="0" y="240" width="1136" height="100" rx="10" fill="#FFFFFF" stroke="#E2E6EC"></rect>
+        <rect x="0" y="350" width="1136" height="100" rx="10" fill="#EEF2F7"></rect>
+        <text x="18" y="75" font-size="15" font-weight="700" fill="#0A2A5E">You</text>
+        <text x="18" y="185" font-size="15" font-weight="700" fill="#6B7A90">The app</text>
+        <text x="18" y="295" font-size="15" font-weight="700" fill="#6B7A90">Finance</text>
+        <text x="18" y="405" font-size="15" font-weight="700" fill="#6B7A90">ED</text>
+
+        <rect x="110" y="145" width="150" height="70" rx="8" fill="#FFFFFF" stroke="#C9D3E0"></rect>
+        <text x="185" y="175" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">Emails you:</text>
+        <text x="185" y="195" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">statement ready</text>
+
+        <rect x="280" y="35" width="150" height="70" rx="8" fill="#0A2A5E"></rect>
+        <text x="355" y="65" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">Import your</text>
+        <text x="355" y="85" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">statement</text>
+
+        <rect x="450" y="145" width="150" height="70" rx="8" fill="#FFFFFF" stroke="#C9D3E0"></rect>
+        <text x="525" y="175" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">Suggests codes,</text>
+        <text x="525" y="195" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">attaches receipts</text>
+
+        <rect x="620" y="35" width="150" height="70" rx="8" fill="#0A2A5E"></rect>
+        <text x="695" y="65" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">Check lines,</text>
+        <text x="695" y="85" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">then Submit</text>
+
+        <rect x="790" y="255" width="150" height="70" rx="8" fill="#FFFFFF" stroke="#C9D3E0"></rect>
+        <text x="865" y="285" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">Reviews and</text>
+        <text x="865" y="305" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">approves</text>
+
+        <rect x="960" y="365" width="150" height="70" rx="8" fill="#FFFFFF" stroke="#C9D3E0"></rect>
+        <text x="1035" y="395" font-size="14" font-weight="600" fill="#1A2B45" text-anchor="middle">Final approval,</text>
+        <text x="1035" y="415" font-size="14" font-weight="600" fill="#2E7D32" text-anchor="middle">Approved</text>
+
+        <path d="M260 180H270V70H278" fill="none" stroke="#6B7A90" stroke-width="2" marker-end="url(#arrow)"></path>
+        <path d="M430 70H440V180H448" fill="none" stroke="#6B7A90" stroke-width="2" marker-end="url(#arrow)"></path>
+        <path d="M600 180H610V70H618" fill="none" stroke="#6B7A90" stroke-width="2" marker-end="url(#arrow)"></path>
+        <path d="M770 70H780V290H788" fill="none" stroke="#6B7A90" stroke-width="2" marker-end="url(#arrow)"></path>
+        <path d="M940 290H950V400H958" fill="none" stroke="#6B7A90" stroke-width="2" marker-end="url(#arrow)"></path>
+
+        <path d="M830 255V236H705V109" fill="none" stroke="#C62828" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow-red)"></path>
+        <text x="716" y="228" font-size="13" font-weight="700" fill="#C62828">Send back with notes</text>
+      </g>
+    </svg>
+    <figcaption style="font-size: 15px; color: #6B7A90;">A reconciliation sent back by Finance or the ED returns to you to fix and resubmit.</figcaption>
+  </figure>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>2</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

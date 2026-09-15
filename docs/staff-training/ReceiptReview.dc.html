@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #EDF0F4; }
+    .select { width: 250px; box-sizing: border-box; border: 1px solid #E2E6EC; border-radius: 7px; padding: 6px 9px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; background: #FFFFFF; }
+    .match { padding: 5px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #0A2A5E; color: #FFFFFF; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Receipts</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Receipts to review</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 15px; font-size: 19px; line-height: 1.45;">
+        <p style="margin: 0;">Receipts that couldn't be attached for you are listed under your transactions.</p>
+        <p style="margin: 0;"><strong style="color: #0A2A5E;">Suggested match:</strong> close but not exact, like a tip or US dollars. Check the pre-selected charge, then click Match.</p>
+        <p style="margin: 0;"><strong style="color: #0A2A5E;">No match found</strong> or <strong style="color: #0A2A5E;">can't be read:</strong> pick the charge yourself, then click Match.</p>
+        <p style="margin: 0;">No file in your folder? Click <strong style="color: #C62828;">Attach</strong> on the line and upload a PDF, JPG or PNG.</p>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); padding: 20px 22px 8px; display: flex; flex-direction: column;">
+      <div style="font-size: 17px; font-weight: 700; color: #0A2A5E; padding-bottom: 10px;">Receipts needing review</div>
+      <div class="row">
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 13px; font-weight: 700; color: #1CA0E3;">IMG_1240.jpg</span>
+          <span style="font-size: 12px; color: #6B7A90;">Suggested match: charge includes a tip · The Keg · 2026-07-08 · $70.00</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <span class="select">2026-07-09 — THE KEG ($80.50)<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B7A90" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"></path></svg></span>
+          <span class="match">Match</span>
+        </div>
+      </div>
+      <div class="row">
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 13px; font-weight: 700; color: #1CA0E3;">scan.pdf · receipt 3</span>
+          <span style="font-size: 12px; color: #6B7A90;">No matching charge found · Amazon.ca · 2026-07-18 · $24.99</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <span class="select">2026-07-14 — CUSTOMINK ($312.40)<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B7A90" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"></path></svg></span>
+          <span class="match">Match</span>
+        </div>
+      </div>
+      <div class="row">
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 13px; font-weight: 700; color: #1CA0E3;">IMG_0042.HEIC</span>
+          <span style="font-size: 12px; color: #6B7A90;">Can't be read automatically: HEIC photo</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <span class="select">2026-07-14 — CUSTOMINK ($312.40)<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B7A90" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"></path></svg></span>
+          <span class="match">Match</span>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #6B7A90; padding: 10px 0 12px; border-top: 1px solid #EDF0F4;">Example list. Click a file name to open the receipt.</div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>10</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

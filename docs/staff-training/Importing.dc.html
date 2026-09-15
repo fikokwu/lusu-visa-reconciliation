@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Each month</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Importing</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 18px; font-size: 21px; line-height: 1.45;">
+        <p style="margin: 0;">Importing takes a minute or two. Keep the tab open.</p>
+        <p style="margin: 0;">Every line on the statement comes in: purchases, payments, refunds and fees, with the minus signs as printed.</p>
+        <p style="margin: 0;">Budget codes are suggested for you. You check them next.</p>
+        <p style="margin: 0;">If an import fails, click Import again. Nothing is lost.</p>
+      </div>
+    </div>
+    <div style="height: 440px; background: rgba(244,246,249,.92); border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;">
+      <img src="lusu-logo.png" alt="LUSU" style="height: 34px; width: auto;">
+      <div style="width: 38px; height: 38px; box-sizing: border-box; border: 4px solid #E7F4FC; border-top-color: #1CA0E3; border-radius: 50%;"></div>
+      <div style="font-size: 16px; font-weight: 500; color: #6B7A90;">Extracting transactions with AI…</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 14px; color: #6B7A90;">
+        <div style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"></path></svg><span>Reading statement from Drive…</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#1CA0E3" stroke-width="2"><circle cx="8" cy="8" r="5"></circle></svg><span style="color: #0A2A5E; font-weight: 600;">Extracting transactions with AI…</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C9D3E0" stroke-width="2"><circle cx="8" cy="8" r="5"></circle></svg><span>Suggesting budget codes…</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C9D3E0" stroke-width="2"><circle cx="8" cy="8" r="5"></circle></svg><span>Almost done, finalising…</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>5</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

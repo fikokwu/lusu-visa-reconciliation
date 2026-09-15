@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .th { padding: 9px 12px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6B7A90; text-align: left; }
+    .td { padding: 11px 12px; font-size: 13px; border-top: 1px solid #EDF0F4; white-space: nowrap; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Finishing up</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Sent back? Fix and resubmit</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; font-size: 20px; line-height: 1.45;">
+        <p style="margin: 0;">Finance or the ED can send a reconciliation back. You get an email with their notes.</p>
+        <p style="margin: 0;">On your Dashboard it shows <strong style="color: #C62828;">Sent Back</strong>. Click <strong style="color: #C62828;">Fix &amp; resubmit</strong>.</p>
+        <p style="margin: 0;">Make the changes, then click Submit for review again.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #EDF0F4; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px; color: #6B7A90;">From: LUSU Visa Reconciliation</div>
+          <div style="font-size: 17px; font-weight: 700;">Action needed: Reconciliation sent back — July 2026</div>
+        </div>
+        <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.5;">
+          <p style="margin: 0;">Your July 2026 reconciliation has been sent back by Finance.</p>
+          <p style="margin: 0;">Notes: Please add the receipt for CustomInk.</p>
+          <p style="margin: 0;">Please update and resubmit.</p>
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead><tr><th class="th">Month</th><th class="th">Status</th><th class="th">Total</th><th class="th">Flagged</th><th class="th"></th></tr></thead>
+          <tbody><tr>
+            <td class="td">July 2026</td>
+            <td class="td"><span style="padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #C62828; color: #FFFFFF;">Sent Back</span></td>
+            <td class="td">$438.10</td>
+            <td class="td" style="color: #E65100;">1</td>
+            <td class="td" style="text-align: right;"><span style="padding: 5px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; background: #C62828; color: #FFFFFF;">Fix &amp; resubmit</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div style="font-size: 13px; color: #6B7A90;">Example email and Dashboard row.</div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>13</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

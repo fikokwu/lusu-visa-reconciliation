@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 26px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Your reconciliation</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Budget codes and descriptions</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; font-size: 20px; line-height: 1.45;">
+        <p style="margin: 0;">Codes are suggested for you. Check each one. An amber edge means the suggestion was a guess.</p>
+        <p style="margin: 0;">The dropdown lists your department's codes.</p>
+        <p style="margin: 0;">Need another department's code? Click <strong style="color: #0A2A5E;">↗ other</strong>, pick it, and say why. The reason is recorded.</p>
+        <p style="margin: 0;">Say what each purchase was for. It saves when you click away.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <div style="background: #EEF2F7; padding: 8px 14px; display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6B7A90;"><span>Vendor</span><span>Description</span><span>Budget code</span></div>
+        <div style="padding: 12px 14px; display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; box-shadow: inset 3px 0 0 #E65100; font-size: 13px;">
+          <span style="padding-top: 6px;">CUSTOMINK</span>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="border: 1px solid #1CA0E3; box-shadow: 0 0 0 3px #E7F4FC; border-radius: 5px; padding: 5px 7px; background: #FFFFFF;">Orientation volunteer shirts</span>
+            <span style="font-size: 12px; font-weight: 700; color: #2E7D32;">Saved ✓</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="border: 1px solid #E2E6EC; border-radius: 5px; padding: 5px 7px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;">58041-1200 — Swag<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B7A90" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"></path></svg></span>
+            <span style="font-size: 11px; color: #6B7A90;">↗ other</span>
+          </div>
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 12px; padding: 22px; box-shadow: 0 12px 40px rgba(10,42,94,.25); display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 17px; font-weight: 700; color: #0A2A5E;">Use a different budget code</div>
+        <div style="font-size: 12px; color: #6B7A90;">This code is outside your normal department. A reason is required and will be recorded in the audit log.</div>
+        <div style="border: 1px solid #E2E6EC; border-radius: 6px; font-size: 12px; overflow: hidden;">
+          <div style="padding: 5px 9px;">[1000] 58352-1000 — Office Supplies</div>
+          <div style="padding: 5px 9px; background: #1CA0E3; color: #FFFFFF;">[1000] 58365-1000 — Printing &amp; Copying</div>
+          <div style="padding: 5px 9px;">[1700] 58520-1700 — Travel</div>
+        </div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6B7A90;">Reason (required)</div>
+        <div style="border: 1px solid #E2E6EC; border-radius: 7px; padding: 7px 10px; font-size: 13px;">Posters printed for the Council town hall</div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <span style="padding: 6px 13px; border-radius: 7px; font-size: 13px; font-weight: 600; background: #E7F4FC; color: #0A2A5E;">Cancel</span>
+          <span style="padding: 6px 13px; border-radius: 7px; font-size: 13px; font-weight: 600; background: #0A2A5E; color: #FFFFFF;">Save override</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>7</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .file { display: flex; align-items: center; gap: 12px; padding: 11px 18px; border-top: 1px solid #EDF0F4; font-size: 15px; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Receipts</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Drop receipts in your folder</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 15px; font-size: 20px; line-height: 1.45;">
+        <p style="margin: 0;">Save photos or PDFs to your receipts folder as you go. Open it from <strong style="color: #0A2A5E;">Receipts folder ↗</strong> or the link on your Dashboard.</p>
+        <p style="margin: 0;">Any file name, any subfolder. The app reads what's printed on the receipt.</p>
+        <p style="margin: 0;">Several receipts in one scan is fine. Each is matched to its own charge.</p>
+        <p style="margin: 0;">When the amount matches a charge exactly, the receipt is attached for you: when you open your reconciliation, every hour, or when you click <strong style="color: #0A2A5E;">Scan Drive</strong>.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+        <div style="padding: 14px 18px; font-size: 15px; font-weight: 700; color: #0A2A5E; display: flex; align-items: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#0A2A5E" stroke-width="1.6" stroke-linejoin="round"><path d="M2.5 5.5a1 1 0 0 1 1-1h4l2 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"></path></svg>
+          Your receipts folder
+        </div>
+        <div class="file"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6B7A90" stroke-width="1.6" stroke-linejoin="round"><path d="M2.5 5.5a1 1 0 0 1 1-1h4l2 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"></path></svg><span style="flex-grow: 1;">July 2026</span><span style="font-size: 13px; color: #6B7A90;">subfolders are read too</span></div>
+        <div class="file"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6B7A90" stroke-width="1.6" stroke-linejoin="round"><path d="M5 2.5h6.5l3.5 3.5v11.5h-10z M11.5 2.5v3.5h3.5"></path></svg><span style="flex-grow: 1;">scan.pdf</span><span style="font-size: 13px; color: #2E7D32; font-weight: 600;">2 receipts attached</span></div>
+        <div class="file"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6B7A90" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"></rect><path d="M3 13l4-4 3 3 2-2 5 5"></path></svg><span style="flex-grow: 1;">IMG_1234.jpg</span><span style="font-size: 13px; color: #2E7D32; font-weight: 600;">attached</span></div>
+        <div class="file"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6B7A90" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"></rect><path d="M3 13l4-4 3 3 2-2 5 5"></path></svg><span style="flex-grow: 1;">IMG_1240.jpg</span><span style="font-size: 13px; color: #E65100; font-weight: 600;">to review</span></div>
+      </div>
+      <div style="background: #FFF3E0; border: 1px solid #FFD7AE; border-radius: 10px; padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; color: #1A2B45;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E65100" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M10 3l8 14H2z"></path><path d="M10 8v4M10 14.5v.01"></path></svg>
+        <span><strong style="color: #B34700;">iPhone users:</strong> HEIC photos can't be read automatically. Set Settings › Camera › Formats › <strong>Most Compatible</strong>.</span>
+      </div>
+      <div style="font-size: 13px; color: #6B7A90;">Example folder.</div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>9</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

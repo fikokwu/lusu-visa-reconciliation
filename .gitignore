@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+assets/
+node_modules/
+.clasp.json

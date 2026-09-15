@@ -1,0 +1,1558 @@
+<script>
+// ============================================================
+// Client-side JS for LUSU Visa Reconciliation
+// ============================================================
+
+var APP = {
+  user: null,
+  currentReconId: null,
+  currentRecon: null,
+  activeFilter: 'all',
+  savingCount: 0,
+  allCodes: null,
+  overrideTxId: null,
+  lastSavedAt: null,
+  editingUserId: null,
+  users: null,
+  autoScanned: {}
+};
+
+// ---- Init ----
+
+document.addEventListener('DOMContentLoaded', function() {
+  applyLogo();
+  google.script.run
+    .withSuccessHandler(onUserLoaded)
+    .withFailureHandler(onFatalError)
+    .getCurrentUser();
+});
+
+function applyLogo() {
+  if (!window.__LOGO_URL) return;
+  var topbarImg = document.getElementById('topbarLogo');
+  var topbarWm = document.getElementById('topbarWordmark');
+  if (topbarImg && topbarWm) {
+    topbarImg.src = window.__LOGO_URL;
+    topbarImg.style.display = '';
+    topbarWm.style.display = 'none';
+  }
+  var overlayImg = document.getElementById('overlayLogo');
+  if (overlayImg) {
+    overlayImg.src = window.__LOGO_URL;
+    overlayImg.style.display = '';
+  }
+}
+
+function onUserLoaded(user) {
+  APP.user = user;
+  document.getElementById('topbarUser').textContent = user.name + ' · ' + user.department_suffix;
+
+  if (user.role === 'finance' || user.role === 'ed' || user.role === 'exec') {
+    document.getElementById('reportsNavBtn').style.display = '';
+  }
+  if (user.role === 'finance' || user.role === 'ed') {
+    document.getElementById('staffRecsNavBtn').style.display = '';
+    document.getElementById('usersNavBtn').style.display = '';
+    // Exec can see Reports but must not see the fiscal year-end close.
+    document.getElementById('fyCloseCard').classList.remove('hidden');
+  }
+
+  google.script.run
+    .withSuccessHandler(function(url) {
+      if (!url) return;
+      var link = document.getElementById('formatTemplateLink');
+      link.href = url;
+      link.style.display = '';
+    })
+    .withFailureHandler(function() {})
+    .getFormatTemplateUrl();
+
+  // Surface the user's Drive receipts folder so they can drop receipts in
+  // anytime — they're read and matched automatically (scanReceiptsForRecon).
+  var folderId = String(user.drive_folder_id || '').trim();
+  if (folderId) {
+    var folderUrl = 'https://drive.google.com/drive/folders/' + encodeURIComponent(folderId);
+    var hintLink = document.getElementById('receiptsFolderLink');
+    if (hintLink) {
+      hintLink.href = folderUrl;
+      document.getElementById('receiptsFolderHint').classList.remove('hidden');
+    }
+    var folderBtn = document.getElementById('receiptsFolderBtn');
+    if (folderBtn) {
+      folderBtn.href = folderUrl;
+      folderBtn.style.display = '';
+    }
+  }
+
+  loadDashboard();
+}
+
+function onFatalError(err) {
+  document.body.innerHTML = '<div style="font-family:system-ui;padding:40px"><h2>Error</h2><p>' + err.message + '</p></div>';
+}
+
+// ---- View switching ----
+
+function showView(name) {
+  ['viewDashboard','viewStaffRecs','viewEditor','viewReports','viewUsers'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  var target = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (target) target.classList.remove('hidden');
+
+  document.querySelectorAll('.subnav-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (name === 'dashboard') {
+    document.querySelector('.subnav-btn:first-child').classList.add('active');
+    if (APP.user) loadDashboard();
+  }
+  if (name === 'staffRecs') { document.getElementById('staffRecsNavBtn').classList.add('active'); loadStaffRecs(); }
+  if (name === 'reports') document.getElementById('reportsNavBtn').classList.add('active');
+  if (name === 'users') { document.getElementById('usersNavBtn').classList.add('active'); loadUsers(); }
+}
+
+// ---- Dashboard ----
+
+function loadDashboard() {
+  showLoading('Loading...');
+  google.script.run
+    .withSuccessHandler(function(data) {
+      APP.dashboardData = data;
+      var recons = Array.isArray(data) ? data : (data && data.recons) || [];
+      var stats = (data && data.stats) || null;
+      renderReconTable(recons, 'reconTable', {
+        emptyText: 'No reconciliations yet. Your statements will appear above when ready to import.'
+      });
+      if (stats) renderStatsInto(stats, 'stat');
+      google.script.run
+        .withSuccessHandler(renderAvailableStatements)
+        .withFailureHandler(function(err) {
+          console.error('getAvailableStatements failed:', err && err.message);
+        })
+        .getAvailableStatements();
+    })
+    .withFailureHandler(showError)
+    .getDashboard();
+}
+
+// Staff Recs (finance/ed): everyone else's reconciliations + their stats.
+function loadStaffRecs() {
+  if (APP.dashboardData) paintStaffRecs(APP.dashboardData); // instant paint from cache
+  else showLoading('Loading...');
+  google.script.run
+    .withSuccessHandler(function(data) {
+      APP.dashboardData = data;
+      paintStaffRecs(data);
+    })
+    .withFailureHandler(showError)
+    .getDashboard();
+  google.script.run
+    .withSuccessHandler(renderStatementsOverview)
+    .withFailureHandler(function(err) {
+      var card = document.getElementById('statementsOverviewCard');
+      if (card) card.innerHTML = '<h3>Statements in Drive</h3><p class="empty-state" style="color:var(--red)">' + esc(err && err.message || 'Failed to load') + '</p>';
+    })
+    .getStatementsOverview();
+}
+
+// Which user does each statement PDF match? Makes "X can't see their
+// statement" self-diagnosing for finance: mismatched names, auto-created
+// accounts and duplicate emails are all surfaced here.
+function renderStatementsOverview(o) {
+  var card = document.getElementById('statementsOverviewCard');
+  if (!card) return;
+  var html = '<h3>Statements in Drive</h3>';
+  if (o && o.error) {
+    html += '<p class="empty-state" style="color:var(--red)">' + esc(o.error) + '</p>';
+  }
+  var files = (o && o.files) || [];
+  if (files.length === 0 && !(o && o.error)) {
+    html += '<p class="empty-state">No statement PDFs in the folder.</p>';
+  }
+  files.forEach(function(f) {
+    var status;
+    if (f.unparsed) {
+      status = '<span style="color:var(--amber)">Filename doesn\'t match "[Name] VISA Statement [Month] [Year].pdf" — nobody can see it</span>';
+    } else if (f.matches.length) {
+      status = '<span style="color:var(--green)">' + esc(f.matches.join(', ')) + '</span>';
+    } else if (f.inactive_matches.length) {
+      status = '<span style="color:var(--amber)">Only inactive: ' + esc(f.inactive_matches.join(', ')) + '</span>';
+    } else {
+      status = '<span style="color:var(--red);font-weight:600">No matching user</span>';
+    }
+    html += '<div class="avail-stmt-row"><span>' + esc(f.fileName) + '</span><span>' + status + '</span></div>';
+  });
+  var unmatchedUsers = ((o && o.users) || []).filter(function(u) {
+    return u.active && !u.matched_file_count;
+  });
+  if (unmatchedUsers.length) {
+    html += '<p class="avail-stmt-heading" style="margin-top:14px">Active users matching no statement</p>';
+    unmatchedUsers.forEach(function(u) {
+      html += '<div class="avail-stmt-row"><span>' + esc(u.name) + ' &lt;' + esc(u.email) + '&gt; · ' + esc(u.role) + '</span>' +
+        (u.looks_auto_provisioned ? '<span class="badge badge-imported">auto-created account</span>' : '<span></span>') +
+        '</div>';
+    });
+  }
+  if (o && o.duplicate_emails && o.duplicate_emails.length) {
+    html += '<p style="color:var(--red);font-size:13px;margin-top:10px"><strong>Duplicate emails in Users sheet (first row wins at sign-in):</strong> ' + esc(o.duplicate_emails.join('; ')) + '</p>';
+  }
+  html += '<p class="muted-note" style="margin-top:12px">A statement is visible to a user when its card-holder name matches that user\'s Name (or email prefix) in the Users tab. ' +
+    'Names shown here as <code>\\uXXXX</code> contain hidden characters — retype them in the Users tab. ' +
+    '"auto-created account" means the person signed in before being added, so their account is named after their email prefix — edit their Name to fix matching.</p>';
+  card.innerHTML = html;
+}
+
+function paintStaffRecs(data) {
+  hideLoading();
+  renderReconTable((data && data.staffRecons) || [], 'staffReconTable', {
+    showStaff: true,
+    emptyText: 'No staff reconciliations yet.'
+  });
+  if (data && data.staffStats) renderStatsInto(data.staffStats, 'staffStat');
+}
+
+function renderStatsInto(stats, idPrefix) {
+  var t = document.getElementById(idPrefix + 'Total');       if (t) t.textContent = fmt(stats.total_charges);
+  var h = document.getElementById(idPrefix + 'Hst');         if (h) h.textContent = fmt(stats.hst);
+  var a = document.getElementById(idPrefix + 'AutoCoded');   if (a) a.textContent = stats.auto_coded;
+  var n = document.getElementById(idPrefix + 'NeedsReview'); if (n) n.textContent = stats.needs_review;
+}
+
+function renderAvailableStatements(statements) {
+  var container = document.getElementById('availableStatements');
+  if (!statements || statements.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+  var html = '<p class="avail-stmt-heading">Your statements</p>';
+  html += statements.map(function(s) {
+    var actions = '';
+    if (s.imported) {
+      actions += '<span class="badge badge-imported">Imported</span> ';
+    } else {
+      actions += '<button class="btn-sm btn-primary" onclick="importFromDrive(\'' + esc(s.fileId) + '\',\'' + esc(s.month) + '\')">Import</button> ';
+    }
+    actions += '<button class="btn-sm btn-secondary" onclick="viewStatement(\'' + esc(s.fileId) + '\')">View</button>';
+    return '<div class="avail-stmt-row">' +
+      '<span>' + esc(s.fileName) + '</span>' +
+      '<span>' + actions + '</span>' +
+      '</div>';
+  }).join('');
+  container.innerHTML = html;
+  container.classList.remove('hidden');
+}
+
+function viewStatement(fileId) {
+  // Open the window synchronously so popup blockers allow it, then navigate
+  // it once the server returns the (freshly permissioned) Drive URL.
+  var win = window.open('', '_blank');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.url && win) win.location = res.url;
+      else if (win) win.close();
+    })
+    .withFailureHandler(function(err) {
+      if (win) win.close();
+      alert('Could not open statement: ' + err.message);
+    })
+    .openStatement(fileId);
+}
+
+function importFromDrive(fileId, month) {
+  var steps = [
+    'Reading statement from Drive…',
+    'Extracting transactions with AI…',
+    'Suggesting budget codes…',
+    'Almost done, finalising…'
+  ];
+  var stepIdx = 0;
+  showLoading(steps[0]);
+  var timer = setInterval(function() {
+    stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+    document.getElementById('loadingMsg').textContent = steps[stepIdx];
+  }, 12000);
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      clearInterval(timer);
+      hideLoading();
+      openRecon(result.recon_id);
+    })
+    .withFailureHandler(function(err) {
+      clearInterval(timer);
+      hideLoading();
+      alert('Import failed: ' + err.message);
+    })
+    .importStatementFromDrive(fileId, month);
+}
+
+function renderReconTable(recons, containerId, opts) {
+  opts = opts || {};
+  hideLoading();
+  var container = document.getElementById(containerId);
+
+  if (!recons || recons.length === 0) {
+    container.innerHTML = '<p class="empty-state">' + (opts.emptyText || 'No reconciliations yet.') + '</p>';
+    return;
+  }
+
+  // Sort: active first (draft, sent_back), then in-review, then approved.
+  // Within each group, newest last_edited_at first.
+  var statusOrder = { draft: 0, sent_back: 0, submitted: 1, finance_review: 1, ed_review: 1, approved: 2 };
+  var sorted = recons.slice().sort(function(a, b) {
+    var sa = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
+    var sb = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
+    if (sa !== sb) return sa - sb;
+    return String(b.last_edited_at || b.created_at).localeCompare(String(a.last_edited_at || a.created_at));
+  });
+
+  var html = '<table class="recon-table"><thead><tr>' +
+    '<th>Month</th>' + (opts.showStaff ? '<th>Staff</th>' : '') +
+    '<th>Status</th><th>Total</th><th>Transactions</th><th>Flagged</th><th>Last edited</th><th></th>' +
+    '</tr></thead><tbody>';
+
+  sorted.forEach(function(r) {
+    html += '<tr>' +
+      '<td>' + esc(formatMonth(r.month)) + '</td>' +
+      (opts.showStaff ? '<td>' + esc(r.user_name) + '</td>' : '') +
+      '<td>' + badge(r.status) + '</td>' +
+      '<td>' + fmt(r.reconciled_total) + '</td>' +
+      '<td>' + r.tx_count + '</td>' +
+      '<td>' + (r.flagged_count > 0 ? '<span style="color:var(--amber)">' + r.flagged_count + '</span>' : '0') + '</td>' +
+      '<td class="last-edited">' + timeAgo(r.last_edited_at || r.created_at) + '</td>' +
+      '<td>' + dashboardActionBtn(r) + '</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function dashboardActionBtn(r) {
+  var click = 'onclick="openRecon(\'' + r.recon_id + '\')"';
+  if (r.status === 'draft')     return '<button class="btn-sm btn-primary" ' + click + '>Continue</button>';
+  if (r.status === 'sent_back') return '<button class="btn-sm btn-danger" ' + click + '>Fix &amp; resubmit</button>';
+  if (r.status === 'submitted' || r.status === 'finance_review' || r.status === 'ed_review') {
+    var label = (APP.user.role === 'finance' || APP.user.role === 'ed') ? 'Review' : 'View';
+    return '<button class="btn-sm btn-secondary" ' + click + '>' + label + '</button>';
+  }
+  return '<button class="btn-sm btn-secondary" ' + click + '>View</button>';
+}
+
+
+// ---- Reconciliation editor ----
+
+function openRecon(reconId) {
+  APP.currentReconId = reconId;
+  showLoading('Loading reconciliation...');
+  google.script.run
+    .withSuccessHandler(renderEditor)
+    .withFailureHandler(showError)
+    .getReconciliation(reconId);
+}
+
+function renderEditor(recon) {
+  hideLoading();
+  if (!recon) {
+    alert('This reconciliation could not be loaded — the server returned no data. Try refreshing the page (Cmd/Ctrl+Shift+R). If it keeps happening, the app needs to be redeployed.');
+    showView('dashboard');
+    return;
+  }
+  APP.currentRecon = recon;
+  APP.lastSavedAt = recon.last_edited_at || recon.created_at;
+  showView('editor');
+
+  document.getElementById('editorMonth').textContent = formatMonth(recon.month);
+  document.getElementById('editorUser').textContent = recon.user_name || APP.user.name;
+  document.getElementById('editorStatusBadge').innerHTML = badge(recon.status);
+  updateSavedAtLabel();
+  updateEditorStats(recon.transactions || []);
+
+  var isLocked = ['submitted','finance_review','ed_review','approved'].indexOf(recon.status) !== -1;
+  var isApproved = recon.status === 'approved';
+  var isMyRecon = recon.user_id === APP.user.user_id;
+  // Exec is scoped to their own recons server-side, so reviewer = finance/ed.
+  var isReviewer = APP.user.role === 'finance' || APP.user.role === 'ed';
+  var canWrite = isMyRecon || isReviewer;
+  var reviewerCanEditCode = (APP.user.role === 'finance' || APP.user.role === 'ed') && isLocked && !isApproved;
+
+  renderTxTable(
+    recon.transactions,
+    recon.available_codes,
+    isLocked || !canWrite,                     // descReadonly
+    (isLocked && !reviewerCanEditCode) || !canWrite  // codeReadonly
+  );
+  updateCounts(recon.transactions);
+  updateVarianceBar(recon);
+  loadReceiptsForReview(recon.recon_id);
+
+  // Read new receipts from the owner's folder once per page load for each open
+  // reconciliation (including right after an import); refreshes if anything changed.
+  if (!isLocked && canWrite && !APP.autoScanned[recon.recon_id]) {
+    APP.autoScanned[recon.recon_id] = true;
+    runReceiptScan(false);
+  }
+
+  // Submit button
+  var submitBtn = document.getElementById('submitBtn');
+  submitBtn.style.display = (isMyRecon && !isLocked) ? '' : 'none';
+
+  // Approval panel
+  renderApprovalPanel(recon, isReviewer);
+
+  // Admin override (finance/ed — always visible, any recon status)
+  var adminOverride = document.getElementById('adminOverride');
+  if (adminOverride) {
+    if (APP.user.role === 'finance' || APP.user.role === 'ed') {
+      adminOverride.classList.remove('hidden');
+      var sel = document.getElementById('adminStatusSelect');
+      if (sel) sel.value = recon.status;
+      var send = document.getElementById('adminSendEmails');
+      if (send) send.checked = false;
+    } else {
+      adminOverride.classList.add('hidden');
+    }
+  }
+}
+
+function applyAdminOverride() {
+  var status = document.getElementById('adminStatusSelect').value;
+  var sendEmails = document.getElementById('adminSendEmails').checked;
+  if (!confirm('Set this reconciliation to "' + status + '"' + (sendEmails ? ' and send notifications?' : '?'))) return;
+  setSaving(true);
+  google.script.run
+    .withSuccessHandler(function(result) {
+      setSaving(false);
+      openRecon(APP.currentReconId);
+    })
+    .withFailureHandler(function(err) {
+      setSaving(false);
+      alert('Override failed: ' + err.message);
+    })
+    .adminSetStatus(APP.currentReconId, status, sendEmails);
+}
+
+// Mirrors txTypeOf_ on the server: rows imported before payments/refunds were
+// recorded have no tx_type and were all charges.
+function txType(t) {
+  var v = String((t && t.tx_type) || '').toLowerCase();
+  return ['charge', 'payment', 'refund', 'fee'].indexOf(v) === -1 ? 'charge' : v;
+}
+
+function hasAmount(v) {
+  return v !== '' && v !== null && v !== undefined;
+}
+
+// Balance owing for the check: finance's entered figure, else the one read
+// from the statement at import.
+function statementOwing(recon) {
+  return hasAmount(recon.bank_statement_total) ? recon.bank_statement_total : recon.statement_balance;
+}
+
+// Only charges and fees get a budget code; payments and refunds don't.
+function needsCode(t) {
+  var type = txType(t);
+  return type === 'charge' || type === 'fee';
+}
+
+function isTxFlagged(t) {
+  var lowConf = needsCode(t) && t.code_source !== 'manual' && (Number(t.ai_confidence) || 0) < 75;
+  return lowConf || t.receipt_status === 'unmatched';
+}
+
+function renderTxTable(txs, codes, descReadonly, codeReadonly) {
+  if (!txs || txs.length === 0) {
+    document.getElementById('txBody').innerHTML =
+      '<tr class="empty-tx-row"><td colspan="9">' +
+        '<div class="empty-editor">' +
+          '<p><strong>No transactions in this reconciliation yet.</strong></p>' +
+          '<p class="muted">The statement may still be importing, or no statement has been imported for this month.</p>' +
+          '<div class="empty-actions">' +
+            '<button class="btn-primary" onclick="triggerDriveScan()">Re-scan Drive</button>' +
+            '<button class="btn-secondary" onclick="showView(\'dashboard\')">Back to dashboard</button>' +
+          '</div>' +
+        '</div>' +
+      '</td></tr>';
+    return;
+  }
+
+  var codeOptions = codes.map(function(c) {
+    return '<option value="' + c.code + '">' + c.code + ' — ' + c.description + '</option>';
+  }).join('');
+
+  var html = txs.map(function(tx, i) {
+    var isFlagged = isTxFlagged(tx);
+    var isDup = tx.duplicate_flag;
+    var rowClass = (isDup ? 'duplicate' : isFlagged ? 'flagged' : '');
+
+    var descCell = descReadonly
+      ? '<input type="text" value="' + esc(tx.description) + '" readonly>'
+      : '<input type="text" value="' + esc(tx.description) + '" ' +
+        'onblur="saveField(\'' + tx.tx_id + '\',\'description\',this.value,this)" ' +
+        'data-orig="' + esc(tx.description) + '">';
+
+    var codeCell;
+    if (!needsCode(tx)) {
+      codeCell = '<span class="receipt-na">No code needed</span>';
+    } else if (codeReadonly) {
+      codeCell = '<select disabled><option value="' + esc(tx.budget_code) + '">' + esc(tx.budget_code) + '</option></select>';
+    } else {
+      // Blank first option so an uncoded row doesn't look coded, and keep a code
+      // that's no longer offered (e.g. a deactivated payroll code) visible
+      // instead of the select silently showing the first code in the list.
+      var knownCode = codes.some(function(c) { return c.code === tx.budget_code; });
+      var extraOption = (tx.budget_code && !knownCode)
+        ? '<option value="' + esc(tx.budget_code) + '">' + esc(tx.budget_code) + '</option>'
+        : '';
+      codeCell = '<select onchange="saveField(\'' + tx.tx_id + '\',\'budget_code\',this.value,this)" ' +
+        'data-orig="' + esc(tx.budget_code) + '"><option value="">— Select code —</option>' +
+        extraOption + codeOptions + '</select>' +
+        '<a href="#" class="override-link" onclick="openOverrideModal(\'' + tx.tx_id + '\');return false">↗ other</a>';
+    }
+
+    var receiptCell = receiptCellHtml(tx, descReadonly);
+
+    var flagCell = '';
+    if (isDup) {
+      flagCell = '<span class="dup-badge" title="Same vendor, amount, and date as another transaction.">' +
+        '<span>Duplicate?</span>' +
+        (codeReadonly ? '' :
+          ' <span class="confirm-check" title="Yes — this is a duplicate, delete this transaction" onclick="confirmDup(\'' + tx.tx_id + '\');event.stopPropagation();">✓</span>' +
+          ' <span class="dismiss-x" title="Not a duplicate — clear this flag" onclick="dismissDup(\'' + tx.tx_id + '\');event.stopPropagation();">×</span>'
+        ) +
+        '</span>';
+    } else if (isFlagged) {
+      flagCell = '<span class="flag-icon" title="Needs attention">&#9888;</span>';
+    }
+
+    var row = '<tr class="' + rowClass + '" id="row-' + tx.tx_id + '" ' +
+      'data-flagged="' + isFlagged + '" data-receipt="' + (tx.receipt_status === 'unmatched') + '" data-dup="' + isDup + '">' +
+      '<td>' + esc(formatTxDate(tx.date)) + '</td>' +
+      '<td>' + esc(tx.vendor) +
+        (txType(tx) === 'charge' ? '' : ' <span class="badge badge-imported">' + txType(tx) + '</span>') + '</td>' +
+      '<td>' + descCell + '</td>' +
+      '<td>' + fmt(tx.total) + '</td>' +
+      '<td>' + (tx.hst ? fmt(tx.hst) : '') + '</td>' +
+      '<td>' + fmt(tx.subtotal) + '</td>' +
+      '<td>' + codeCell + '<span class="flash-msg"></span></td>' +
+      '<td>' + receiptCell + '</td>' +
+      '<td>' + flagCell + '</td>' +
+      '</tr>';
+
+    // Pre-select current budget code after DOM insert — done via attribute
+    return row;
+  }).join('');
+
+  document.getElementById('txBody').innerHTML = html;
+
+  // Pre-select current codes
+  txs.forEach(function(tx) {
+    var row = document.getElementById('row-' + tx.tx_id);
+    if (!row) return;
+    var sel = row.querySelector('select');
+    if (sel && tx.budget_code) sel.value = tx.budget_code;
+  });
+}
+
+function receiptCellHtml(tx, readonly) {
+  if (tx.receipt_status === 'not_required') return '<span class="receipt-na">Not needed</span>';
+  if (tx.receipt_status === 'matched') {
+    var url = 'https://drive.google.com/file/d/' + tx.receipt_file_id + '/view';
+    var link = '<a href="' + url + '" target="_blank" class="receipt-matched">&#10003; ' + esc(tx.receipt_file_name || 'Receipt') + '</a>';
+    if (!readonly) link += ' <button class="btn-sm btn-secondary" onclick="removeReceipt(\'' + tx.tx_id + '\',this)">×</button>';
+    return link;
+  }
+  if (readonly) return '<span class="receipt-attach">Missing</span>';
+  return '<button class="btn-sm receipt-attach" onclick="attachReceipt(\'' + tx.tx_id + '\',this)">Attach</button>';
+}
+
+function updateCounts(txs) {
+  txs = txs || [];
+  var all = txs.length;
+  var review = txs.filter(isTxFlagged).length;
+  var missing = txs.filter(function(t) { return t.receipt_status === 'unmatched'; }).length;
+  var dups = txs.filter(function(t) { return t.duplicate_flag; }).length;
+
+  document.getElementById('tabAll').textContent = all;
+  document.getElementById('tabReview').textContent = review;
+  document.getElementById('tabReceipt').textContent = missing;
+  document.getElementById('tabDup').textContent = dups;
+  document.getElementById('tabDupBtn').style.display = dups > 0 ? '' : 'none';
+
+  // Gray out empty filter tabs (except the All tab)
+  var tabs = document.querySelectorAll('.filter-tabs .tab-btn');
+  tabs.forEach(function(btn) {
+    var span = btn.querySelector('span');
+    if (!span || btn.id === 'tabDupBtn') return;
+    var count = parseInt(span.textContent, 10) || 0;
+    if (btn.textContent.indexOf('All') === 0) return;
+    if (count === 0) btn.classList.add('tab-btn-empty');
+    else btn.classList.remove('tab-btn-empty');
+  });
+
+  // Hide entire filter row when there's nothing to filter (and there are transactions)
+  var filterRow = document.querySelector('#viewEditor .filter-tabs');
+  if (filterRow) {
+    if (all > 0 && review === 0 && missing === 0 && dups === 0) filterRow.classList.add('hidden');
+    else filterRow.classList.remove('hidden');
+  }
+}
+
+function updateEditorStats(txs) {
+  txs = txs || [];
+  var total = txs.length;
+  // Payments and refunds need no code, and only charges need a receipt.
+  var codable = txs.filter(needsCode);
+  var coded = codable.filter(function(t) { return t.budget_code; }).length;
+  var needReceipt = txs.filter(function(t) { return t.receipt_status !== 'not_required'; });
+  var matched = needReceipt.filter(function(t) { return t.receipt_status === 'matched'; }).length;
+  var flagged = txs.filter(function(t) { return isTxFlagged(t) || t.duplicate_flag; }).length;
+  document.getElementById('esTotal').textContent = total;
+  document.getElementById('esCoded').textContent = coded + ' of ' + codable.length;
+  document.getElementById('esReceipts').textContent = matched + ' of ' + needReceipt.length;
+  document.getElementById('esFlagged').textContent = flagged;
+
+  var flaggedCard = document.getElementById('esFlaggedCard');
+  if (flaggedCard) flaggedCard.classList.toggle('stat-card--alert', flagged > 0);
+}
+
+// Statement balance check: previous balance + every line (payments included)
+// should equal the balance owing. Mirrors statementVariance_ on the server.
+function updateVarianceBar(recon) {
+  var spend = 0, payments = 0;
+  (recon.transactions || []).forEach(function(t) {
+    var n = Number(t.total) || 0;
+    if (txType(t) === 'payment') payments += n; else spend += n;
+  });
+  var owing = statementOwing(recon);
+  document.getElementById('vPrev').textContent = fmt(recon.previous_balance);
+  document.getElementById('vRecon').textContent = fmt(spend);
+  document.getElementById('vPayments').textContent = fmt(payments);
+  document.getElementById('vBank').textContent = fmt(owing);
+  var el = document.getElementById('vVariance');
+  if (!hasAmount(owing)) {
+    el.textContent = '—';
+    el.className = '';
+    return;
+  }
+  var variance = Math.round((Number(owing) - ((Number(recon.previous_balance) || 0) + spend + payments)) * 100) / 100;
+  el.textContent = fmt(variance);
+  el.className = variance === 0 ? 'variance-ok' : 'variance-bad';
+}
+
+// ---- Filter tabs ----
+
+function filterTx(type, btn) {
+  APP.activeFilter = type;
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+
+  var rows = document.querySelectorAll('#txBody tr');
+  rows.forEach(function(row) {
+    var show = true;
+    if (type === 'review')  show = row.dataset.flagged === 'true';
+    if (type === 'receipt') show = row.dataset.receipt === 'true';
+    if (type === 'dup')     show = row.dataset.dup === 'true';
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// ---- Save field ----
+
+function saveField(txId, field, value, el) {
+  var origAttr = el.dataset ? el.dataset.orig : el.getAttribute('data-orig');
+  if (value === origAttr) return;
+
+  setSaving(true);
+  var cell = el.closest('td');
+  var flash = cell ? cell.querySelector('.flash-msg') : null;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      setSaving(false);
+      if (el.dataset) el.dataset.orig = value;
+      if (flash) { flash.textContent = 'Saved ✓'; flash.className = 'flash-msg flash-saved'; setTimeout(function() { flash.textContent = ''; }, 2000); }
+    })
+    .withFailureHandler(function(err) {
+      setSaving(false);
+      el.value = origAttr;
+      if (flash) { flash.textContent = 'Save failed'; flash.className = 'flash-msg flash-error'; setTimeout(function() { flash.textContent = ''; }, 3000); }
+      console.error('saveTransaction error:', err.message);
+    })
+    .saveTransaction(txId, field, value);
+}
+
+// ---- Receipt attach / remove ----
+
+function attachReceipt(txId, btn) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf,image/jpeg,image/png,image/heic';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    btn.textContent = 'Uploading...';
+    btn.disabled = true;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var base64 = ev.target.result.split(',')[1];
+      google.script.run
+        .withSuccessHandler(function(result) {
+          var row = btn.closest('tr');
+          var cell = btn.closest('td');
+          row.dataset.receipt = 'false';
+          // Rebuild receipt cell
+          var url = 'https://drive.google.com/file/d/' + result.file_id + '/view';
+          cell.innerHTML = '<a href="' + url + '" target="_blank" class="receipt-matched">&#10003; ' + esc(file.name) + '</a> ' +
+            '<button class="btn-sm btn-secondary" onclick="removeReceipt(\'' + txId + '\',this)">×</button>';
+          refreshReceiptCount(-1);
+        })
+        .withFailureHandler(function(err) {
+          btn.textContent = 'Attach';
+          btn.disabled = false;
+          alert('Failed to attach receipt: ' + err.message);
+        })
+        .attachReceipt(txId, base64, file.name, file.type);
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function removeReceipt(txId, btn) {
+  if (!confirm('Remove this receipt?')) return;
+  google.script.run
+    .withSuccessHandler(function() {
+      var row = btn.closest('tr');
+      var cell = btn.closest('td');
+      row.dataset.receipt = 'true';
+      cell.innerHTML = '<button class="btn-sm receipt-attach" onclick="attachReceipt(\'' + txId + '\',this)">Attach</button>';
+      refreshReceiptCount(1);
+    })
+    .withFailureHandler(function(err) { alert('Failed to remove receipt: ' + err.message); })
+    .removeReceipt(txId);
+}
+
+function refreshReceiptCount(delta) {
+  var el = document.getElementById('tabReceipt');
+  el.textContent = Math.max(0, parseInt(el.textContent) + delta);
+}
+
+// ---- Submit ----
+
+function submitRecon() {
+  showLoading('Submitting...');
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      if (result.success) {
+        openRecon(APP.currentReconId);
+      } else {
+        showSubmitErrors(result.errors);
+      }
+    })
+    .withFailureHandler(function(err) { hideLoading(); alert('Submit failed: ' + err.message); })
+    .submitReconciliation(APP.currentReconId);
+}
+
+function showSubmitErrors(errors) {
+  var msg = 'Cannot submit — please fix these issues:\n\n' + errors.join('\n');
+  alert(msg);
+}
+
+// ---- Approval actions ----
+
+function renderApprovalPanel(recon, isReviewer) {
+  var panel = document.getElementById('approvalPanel');
+  var finPanel = document.getElementById('financePanel');
+  var edPanel = document.getElementById('edPanel');
+  finPanel.classList.add('hidden');
+  edPanel.classList.add('hidden');
+
+  if (!isReviewer) { panel.classList.add('hidden'); return; }
+
+  var status = recon.status;
+  if (status === 'submitted' && APP.user.role === 'finance') {
+    panel.classList.remove('hidden');
+    finPanel.classList.remove('hidden');
+    var owing = statementOwing(recon);
+    document.getElementById('bankTotal').value = hasAmount(owing) ? owing : '';
+    var dupWarning = document.getElementById('duplicateWarning');
+    var dups = (recon.transactions || []).filter(function(t) { return t.duplicate_flag; });
+    if (dups.length > 0) {
+      dupWarning.textContent = dups.length + ' possible duplicate transaction' + (dups.length > 1 ? 's' : '') + ' flagged — review before approving.';
+      dupWarning.classList.remove('hidden');
+    } else {
+      dupWarning.classList.add('hidden');
+    }
+  } else if (status === 'ed_review' && APP.user.role === 'ed') {
+    panel.classList.remove('hidden');
+    edPanel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
+  }
+}
+
+function financeApprove() {
+  var bankTotal = parseFloat(document.getElementById('bankTotal').value);
+  var notes = document.getElementById('financeNotes').value;
+  if (isNaN(bankTotal)) { alert('Please enter the balance owing from the statement.'); return; }
+  showLoading('Approving...');
+  google.script.run
+    .withSuccessHandler(function() { hideLoading(); openRecon(APP.currentReconId); })
+    .withFailureHandler(function(err) { hideLoading(); alert('Error: ' + err.message); })
+    .financeApprove(APP.currentReconId, bankTotal, notes);
+}
+
+function financeSendBack() {
+  var notes = document.getElementById('financeNotes').value;
+  if (!notes) { alert('Please enter notes explaining what needs to be fixed.'); return; }
+  if (!confirm('Send this reconciliation back to staff?')) return;
+  google.script.run
+    .withSuccessHandler(function() { openRecon(APP.currentReconId); })
+    .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+    .financeSendBack(APP.currentReconId, notes);
+}
+
+function edApprove() {
+  var notes = document.getElementById('edNotes').value;
+  showLoading('Approving...');
+  google.script.run
+    .withSuccessHandler(function() { hideLoading(); openRecon(APP.currentReconId); })
+    .withFailureHandler(function(err) { hideLoading(); alert('Error: ' + err.message); })
+    .edApprove(APP.currentReconId, notes);
+}
+
+function edSendBack() {
+  var notes = document.getElementById('edNotes').value;
+  if (!notes) { alert('Please enter notes explaining what needs to be fixed.'); return; }
+  if (!confirm('Send back to staff?')) return;
+  google.script.run
+    .withSuccessHandler(function() { openRecon(APP.currentReconId); })
+    .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+    .edSendBack(APP.currentReconId, notes);
+}
+
+// ---- Export ----
+
+function loadReceiptsForReview(reconId) {
+  google.script.run
+    .withSuccessHandler(renderReceiptReview)
+    .withFailureHandler(function() {})
+    .getReceiptsForReview(reconId);
+}
+
+function renderReceiptReview(receipts) {
+  var section = document.getElementById('receiptReviewSection');
+  var list = document.getElementById('receiptReviewList');
+  if (!receipts || receipts.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  // Suggested matches arrive with Claude's pick pre-selected; receipts it
+  // couldn't match or read are listed so they can be matched by hand.
+  var notes = { review: 'Suggested match', unmatched: 'No matching charge found', unreadable: 'Can\'t be read automatically' };
+  list.innerHTML = receipts.map(function(rcpt) {
+    var txOptions = (rcpt.available_txs || []).map(function(tx) {
+      return '<option value="' + esc(tx.tx_id) + '"' + (tx.tx_id === rcpt.tx_id ? ' selected' : '') + '>' +
+        esc(formatTxDate(tx.date)) + ' — ' + esc(tx.vendor) + ' (' + fmt(tx.total) + ')</option>';
+    }).join('');
+    var fileUrl = 'https://drive.google.com/file/d/' + encodeURIComponent(rcpt.file_id) + '/view';
+    return '<div class="review-receipt" id="rcpt-' + esc(rcpt.receipt_id) + '">' +
+      '<div class="review-receipt-info">' +
+        '<strong><a href="' + fileUrl + '" target="_blank" rel="noopener">' + esc(rcpt.file_name) + '</a>' +
+          (rcpt.file_part ? ' · receipt ' + esc(String(rcpt.file_part)) : '') + '</strong>' +
+        '<span class="review-receipt-meta">' +
+          esc(notes[rcpt.match_status] || '') + (rcpt.match_reason ? ': ' + esc(rcpt.match_reason) : '') +
+          (rcpt.scanned_vendor ? ' · ' + esc(String(rcpt.scanned_vendor)) : '') +
+          (rcpt.scanned_date ? ' · ' + esc(formatTxDate(rcpt.scanned_date)) : '') +
+          (hasAmount(rcpt.scanned_amount) ? ' · ' + fmt(rcpt.scanned_amount) : '') +
+        '</span>' +
+      '</div>' +
+      '<div class="review-receipt-actions">' +
+        (txOptions
+          ? '<select class="input-field" id="sel-' + esc(rcpt.receipt_id) + '">' + txOptions + '</select>' +
+            '<button class="btn-sm btn-primary" onclick="matchReceipt(\'' + esc(rcpt.receipt_id) + '\',this)">Match</button>'
+          : '<span style="color:var(--muted);font-size:13px">No unmatched transactions</span>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function matchReceipt(receiptId, btn) {
+  var sel = document.getElementById('sel-' + receiptId);
+  if (!sel || !sel.value) return;
+  btn.textContent = 'Matching...';
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function() { openRecon(APP.currentReconId); })
+    .withFailureHandler(function(err) {
+      btn.textContent = 'Match';
+      btn.disabled = false;
+      alert('Match failed: ' + err.message);
+    })
+    .manualMatchReceipt(receiptId, sel.value);
+}
+
+function triggerDriveScan() {
+  runReceiptScan(true);
+}
+
+// Reads new receipts from the open reconciliation owner's folder. announce:
+// report the result (Scan Drive button) vs. run quietly (automatic on open).
+function runReceiptScan(announce) {
+  var reconId = APP.currentReconId;
+  var btn = document.getElementById('scanBtn');
+  var done = function() { btn.textContent = 'Scan Drive'; btn.disabled = false; };
+  btn.textContent = 'Reading receipts…';
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(r) {
+      done();
+      var found = r.matched_count + r.review_count + r.unmatched_count + r.unreadable_count;
+      var stillOpen = APP.currentReconId === reconId &&
+        !document.getElementById('viewEditor').classList.contains('hidden');
+      if (stillOpen && r.matched_count > 0) openRecon(reconId);        // attached receipts change the table
+      else if (stillOpen && found > 0) loadReceiptsForReview(reconId); // only the review list changed
+      if (!announce) return;
+      if (r.skipped) {
+        alert(r.skipped);
+      } else if (found === 0) {
+        alert('No new receipts found in the receipts folder.');
+      } else {
+        alert('Receipts read: ' + r.matched_count + ' attached, ' + r.review_count + ' to review' +
+          (r.unmatched_count ? ', ' + r.unmatched_count + ' with no matching charge' : '') +
+          (r.unreadable_count ? ', ' + r.unreadable_count + ' can\'t be read (match them below)' : '') + '.');
+      }
+    })
+    .withFailureHandler(function(err) {
+      done();
+      if (announce) alert('Scan failed: ' + err.message);
+      else console.error('Receipt scan failed:', err && err.message);
+    })
+    .scanReceiptsForRecon(reconId);
+}
+
+function exportRecon() {
+  showLoading('Generating export...');
+  google.script.run
+    .withSuccessHandler(function(url) { hideLoading(); window.open(url, '_blank'); })
+    .withFailureHandler(function(err) { hideLoading(); alert('Export failed: ' + err.message); })
+    .exportReconciliation(APP.currentReconId);
+}
+
+// ---- Fiscal year-end close ----
+
+function fyBlockersHtml(fyLabel, blockers) {
+  return '<div class="warning-banner" style="margin-top:12px">Cannot close ' + esc(fyLabel) +
+    ' — ' + blockers.length + ' reconciliation' + (blockers.length === 1 ? '' : 's') +
+    ' not yet approved:</div>' +
+    '<ul style="margin:8px 0 0 18px;font-size:13px">' +
+    blockers.map(function(b) {
+      return '<li>' + esc(b.name) + ' — ' + esc(b.month) + ' (' + esc(b.status) + ')</li>';
+    }).join('') + '</ul>';
+}
+
+function fyResetCloseBtn() {
+  var btn = document.getElementById('fyCloseBtn');
+  btn.disabled = false;
+  btn.textContent = 'Close fiscal year…';
+}
+
+function startFiscalClose() {
+  var btn = document.getElementById('fyCloseBtn');
+  var out = document.getElementById('fyCloseResult');
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  out.innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(p) {
+      fyResetCloseBtn();
+      if (p.blockers && p.blockers.length) {
+        out.innerHTML = fyBlockersHtml(p.fy_label, p.blockers);
+        return;
+      }
+      if (p.nothing_to_archive) {
+        out.innerHTML = '<p class="muted-note" style="margin-top:12px">Nothing to archive for ' +
+          esc(p.fy_label) + ' — it may already be closed.</p>';
+        return;
+      }
+      var msg = 'Close ' + p.fy_label + ' (' + p.period + ')?\n\n' +
+        'This will archive:\n' +
+        '• ' + p.counts.recons + ' reconciliations\n' +
+        '• ' + p.counts.transactions + ' transactions\n' +
+        '• ' + p.counts.receipts + ' receipt records\n' +
+        '• ' + p.counts.statement_files + ' statement files\n\n' +
+        'Data moves to an archive spreadsheet, Drive files move to Archives/' + p.fy_label +
+        ', and dashboard totals reset. This cannot be easily undone.';
+      if (!confirm(msg)) return;
+      runFiscalClose();
+    })
+    .withFailureHandler(function(err) {
+      fyResetCloseBtn();
+      alert('Could not check the fiscal year: ' + err.message);
+    })
+    .getFiscalYearClosePreview();
+}
+
+function runFiscalClose() {
+  var btn = document.getElementById('fyCloseBtn');
+  var out = document.getElementById('fyCloseResult');
+  btn.disabled = true;
+  btn.textContent = 'Closing…';
+  showLoading('Closing the fiscal year — this can take a few minutes…');
+  google.script.run
+    .withSuccessHandler(function(r) {
+      hideLoading();
+      fyResetCloseBtn();
+      if (!r.success) {
+        out.innerHTML = fyBlockersHtml(r.fy_label, r.blockers || []);
+        return;
+      }
+      out.innerHTML = '<p style="font-size:13px;margin-top:12px"><strong>' + esc(r.fy_label) +
+        ' closed.</strong> Archived ' + r.archived.recons + ' reconciliations, ' +
+        r.archived.transactions + ' transactions, ' + r.archived.receipts + ' receipt records and ' +
+        r.archived.statement_files + ' statement files. ' +
+        '<a href="' + esc(r.archive_url) + '" target="_blank" rel="noopener">Open archive spreadsheet ↗</a></p>';
+    })
+    .withFailureHandler(function(err) {
+      hideLoading();
+      fyResetCloseBtn();
+      alert('Fiscal year close failed: ' + err.message +
+        '\n\nIt is safe to press the button again — the close picks up where it left off.');
+    })
+    .closeFiscalYear();
+}
+
+// ---- Duplicate dismiss ----
+
+function confirmDup(txId) {
+  if (!confirm('Confirm this transaction is a duplicate? It will be deleted from the reconciliation.')) return;
+  setSaving(true);
+  google.script.run
+    .withSuccessHandler(function() {
+      setSaving(false);
+      openRecon(APP.currentReconId);
+    })
+    .withFailureHandler(function(err) {
+      setSaving(false);
+      alert('Could not delete: ' + err.message);
+    })
+    .deleteTransaction(txId);
+}
+
+function dismissDup(txId) {
+  google.script.run
+    .withSuccessHandler(function() {
+      var row = document.getElementById('row-' + txId);
+      if (!row) return;
+      row.classList.remove('duplicate');
+      row.dataset.dup = 'false';
+      var stillFlagged = row.dataset.flagged === 'true';
+      if (stillFlagged) row.classList.add('flagged');
+      var flagCell = row.cells[row.cells.length - 1];
+      flagCell.innerHTML = stillFlagged ? '<span class="flag-icon" title="Needs attention">&#9888;</span>' : '';
+
+      // Decrement Duplicates tab
+      var tabDup = document.getElementById('tabDup');
+      if (tabDup) {
+        var n = Math.max(0, parseInt(tabDup.textContent, 10) - 1);
+        tabDup.textContent = n;
+        var dupBtn = document.getElementById('tabDupBtn');
+        if (dupBtn && n === 0) dupBtn.style.display = 'none';
+      }
+      // Refresh Flagged stat from current DOM
+      var rows = document.querySelectorAll('#txBody tr');
+      var flagged = 0;
+      rows.forEach(function(r) {
+        if (r.dataset.flagged === 'true' || r.dataset.dup === 'true') flagged++;
+      });
+      var esFlagged = document.getElementById('esFlagged');
+      if (esFlagged) esFlagged.textContent = flagged;
+      var esFlaggedCard = document.getElementById('esFlaggedCard');
+      if (esFlaggedCard) esFlaggedCard.classList.toggle('stat-card--alert', flagged > 0);
+    })
+    .withFailureHandler(function(err) { alert('Could not clear flag: ' + err.message); })
+    .dismissDuplicate(txId);
+}
+
+// ---- Reports ----
+
+function showReportTab(type, btn) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var content = document.getElementById('reportContent');
+  content.innerHTML = '<p class="empty-state">Loading...</p>';
+
+  if (type === 'monthly') {
+    var months = getMonthOptions();
+    content.innerHTML = '<select class="input-full" onchange="loadMonthlyReport(this.value)">' +
+      months.map(function(m) { return '<option>' + m + '</option>'; }).join('') + '</select>' +
+      '<div id="reportTable" style="margin-top:16px"></div>';
+    loadMonthlyReport(months[0]);
+  } else if (type === 'ytd') {
+    var now = new Date();
+    var fyStart = now.getMonth() >= 4
+      ? (now.getFullYear() + '-05-01')
+      : ((now.getFullYear() - 1) + '-05-01');
+    content.innerHTML = '<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Fiscal year starting May ' +
+      fyStart.substring(0,4) + '</p><div id="reportTable"></div>';
+    google.script.run
+      .withSuccessHandler(renderYtdReport)
+      .withFailureHandler(showError)
+      .getYTDReport(fyStart);
+  } else if (type === 'staff') {
+    content.innerHTML = '<p class="empty-state">Loading staff...</p>';
+    google.script.run
+      .withSuccessHandler(function(users) {
+        if (!users || users.length === 0) {
+          content.innerHTML = '<p class="empty-state">No active users found.</p>';
+          return;
+        }
+        var options = users.map(function(u) {
+          return '<option value="' + esc(u.user_id) + '">' + esc(u.name) + '</option>';
+        }).join('');
+        content.innerHTML = '<select class="input-full" id="staffSelect" onchange="loadStaffReport(this.value)">' + options + '</select>' +
+          '<div id="reportTable" style="margin-top:16px"></div>';
+        loadStaffReport(users[0].user_id);
+      })
+      .withFailureHandler(showError)
+      .getStaffUsers();
+  }
+}
+
+function loadStaffReport(userId) {
+  var table = document.getElementById('reportTable');
+  if (table) table.innerHTML = '<p class="empty-state">Loading...</p>';
+  google.script.run
+    .withSuccessHandler(renderStaffReport)
+    .withFailureHandler(showError)
+    .getStaffReport(userId);
+}
+
+function renderStaffReport(data) {
+  var table = document.getElementById('reportTable');
+  if (!data || data.length === 0) { table.innerHTML = '<p class="empty-state">No reconciliations for this person.</p>'; return; }
+  var html = '<table class="recon-table"><thead><tr><th>Month</th><th>Status</th><th>Total</th><th>Transactions</th><th>Receipts matched</th><th>Receipts missing</th></tr></thead><tbody>';
+  data.forEach(function(r) {
+    html += '<tr><td>' + esc(r.month) + '</td><td>' + badge(r.status) + '</td><td>' + fmt(r.reconciled_total) +
+      '</td><td>' + r.tx_count + '</td><td>' + r.receipts_matched + '</td><td>' +
+      (r.receipts_missing > 0 ? '<span style="color:var(--amber)">' + r.receipts_missing + '</span>' : '0') + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div style="margin-top:12px"><button class="btn-secondary" onclick="downloadCsv(' + JSON.stringify(data) + ',\'Staff Report\')">Download CSV</button></div>';
+  table.innerHTML = html;
+}
+
+function loadMonthlyReport(month) {
+  google.script.run
+    .withSuccessHandler(renderMonthlyReport)
+    .withFailureHandler(showError)
+    .getMonthlyReport(month);
+}
+
+function renderMonthlyReport(data) {
+  var table = document.getElementById('reportTable');
+  if (!data || data.length === 0) { table.innerHTML = '<p class="empty-state">No approved reconciliations for this month yet. Reports fill in once a reconciliation is fully approved.</p>'; return; }
+  var html = '<table class="recon-table"><thead><tr><th>Department</th><th>Total spend</th><th>Transactions</th><th>Reconciliations</th></tr></thead><tbody>';
+  var grandTotal = 0;
+  data.forEach(function(r) {
+    grandTotal += r.total_spend || 0;
+    html += '<tr><td>' + esc(r.department_name || r.department_suffix) + '</td><td>' + fmt(r.total_spend) + '</td><td>' + r.tx_count + '</td><td>' + r.reconciliation_count + '</td></tr>';
+  });
+  html += '<tr style="font-weight:bold;background:#F5F5F5"><td>Total</td><td>' + fmt(grandTotal) + '</td><td></td><td></td></tr>';
+  html += '</tbody></table>';
+  html += '<div style="margin-top:12px"><button class="btn-secondary" onclick="downloadCsv(' + JSON.stringify(data) + ',\'Monthly Report\')">Download CSV</button></div>';
+  table.innerHTML = html;
+}
+
+function renderYtdReport(data) {
+  var table = document.getElementById('reportTable');
+  if (!data || data.length === 0) { table.innerHTML = '<p class="empty-state">No approved reconciliations this fiscal year yet. Reports fill in once reconciliations are approved.</p>'; return; }
+  var html = '<table class="recon-table"><thead><tr><th>Budget code</th><th>Description</th><th>Department</th><th>Total YTD</th><th>Transactions</th></tr></thead><tbody>';
+  data.forEach(function(r) {
+    html += '<tr><td>' + esc(r.code) + '</td><td>' + esc(r.description) + '</td><td>' + esc(r.department_suffix) + '</td><td>' + fmt(r.total_spend_ytd) + '</td><td>' + r.tx_count + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div style="margin-top:12px"><button class="btn-secondary" onclick="downloadCsv(' + JSON.stringify(data) + ',\'YTD Report\')">Download CSV</button></div>';
+  table.innerHTML = html;
+}
+
+function downloadCsv(data, name) {
+  if (!data || data.length === 0) return;
+  var headers = Object.keys(data[0]);
+  var rows = [headers.join(',')].concat(data.map(function(r) {
+    return headers.map(function(h) {
+      var v = r[h] !== undefined ? String(r[h]) : '';
+      return v.includes(',') ? '"' + v + '"' : v;
+    }).join(',');
+  }));
+  var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name + ' - ' + new Date().toLocaleDateString() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- Utilities ----
+
+function badge(status) {
+  var s = String(status || '');
+  return '<span class="badge badge-' + esc(s) + '">' + esc(s.replace(/_/g, ' ')) + '</span>';
+}
+
+function fmt(n) {
+  if (n === '' || n === null || n === undefined) return '—';
+  // Negative amounts (payments, refunds) show as -$2,276.06, like the statement.
+  var v = Math.round(parseFloat(n) * 100) / 100;
+  var s = '$' + Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return v < 0 ? '-' + s : s;
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg || 'Loading...';
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function showError(err) {
+  hideLoading();
+  alert('Error: ' + (err.message || err));
+}
+
+function setSaving(on) {
+  APP.savingCount = Math.max(0, APP.savingCount + (on ? 1 : -1));
+  var el = document.getElementById('savingIndicator');
+  if (APP.savingCount > 0) {
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+    APP.lastSavedAt = new Date().toISOString();
+    updateSavedAtLabel();
+  }
+}
+
+function updateSavedAtLabel() {
+  var el = document.getElementById('editorSavedAt');
+  if (!el) return;
+  if (!APP.lastSavedAt) { el.textContent = ''; return; }
+  el.textContent = 'Saved · ' + timeAgo(APP.lastSavedAt);
+}
+
+// Refresh the saved-at label every minute so "just now" → "1 min ago" → ...
+setInterval(updateSavedAtLabel, 60000);
+
+function timeAgo(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  var diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return 'just now';
+  if (diffSec < 3600) return Math.floor(diffSec / 60) + ' min ago';
+  if (diffSec < 86400) return Math.floor(diffSec / 3600) + ' h ago';
+  if (diffSec < 604800) return Math.floor(diffSec / 86400) + ' d ago';
+  return d.toLocaleDateString();
+}
+
+var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// recon.month may arrive as a plain string ("April 2026") or, if the sheet
+// cell got auto-converted to a date, an ISO string. Normalise to "Month YYYY".
+function formatMonth(m) {
+  if (!m) return '';
+  var s = String(m);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return MONTH_NAMES[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+  return s;
+}
+
+// tx.date may arrive as an ISO datetime string; show a clean YYYY-MM-DD.
+function formatTxDate(d) {
+  if (!d) return '';
+  var s = String(d);
+  var iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  var parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.getUTCFullYear() + '-' +
+      String(parsed.getUTCMonth() + 1).padStart(2, '0') + '-' +
+      String(parsed.getUTCDate()).padStart(2, '0');
+  }
+  return s;
+}
+
+// ---- User management ----
+
+function loadUsers() {
+  var container = document.getElementById('usersTable');
+  container.innerHTML = '<p class="empty-state">Loading users…</p>';
+  google.script.run
+    .withSuccessHandler(function(users) {
+      APP.users = users;
+      renderUsers(users);
+    })
+    .withFailureHandler(function(err) {
+      container.innerHTML = '<p class="empty-state" style="color:var(--red)">' + esc(err.message) + '</p>';
+    })
+    .listUsers();
+}
+
+function renderUsers(users) {
+  var container = document.getElementById('usersTable');
+  if (!users || users.length === 0) {
+    container.innerHTML = '<p class="empty-state">No users yet. Click "Add user" to create one.</p>';
+    return;
+  }
+  var html = '<table class="recon-table"><thead><tr>' +
+    '<th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Active</th><th></th>' +
+    '</tr></thead><tbody>';
+  users.forEach(function(u) {
+    html += '<tr>' +
+      '<td>' + esc(u.name) + '</td>' +
+      '<td>' + esc(u.email) + '</td>' +
+      '<td>' + esc(u.role) + '</td>' +
+      '<td>' + esc(u.department_suffix || '—') + '</td>' +
+      '<td>' + (u.active ? '<span style="color:var(--green)">Yes</span>' : '<span style="color:var(--red)">No</span>') + '</td>' +
+      '<td>' +
+        '<button class="btn-sm btn-secondary" onclick="openEditUserModal(\'' + esc(u.user_id) + '\')">Edit</button> ' +
+        '<button class="btn-sm btn-secondary" onclick="resendInvite(\'' + esc(u.user_id) + '\',this)">Send invite</button> ' +
+        '<button class="btn-sm ' + (u.active ? 'btn-danger' : 'btn-secondary') + '" onclick="toggleUserActive(\'' + esc(u.user_id) + '\',' + !!u.active + ')">' +
+          (u.active ? 'Deactivate' : 'Activate') +
+        '</button> ' +
+        '<button class="btn-sm btn-danger" onclick="deleteUserClient(\'' + esc(u.user_id) + '\')">Delete</button>' +
+      '</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function openAddUserModal() {
+  APP.editingUserId = null;
+  document.getElementById('userModalTitle').textContent = 'Add user';
+  document.getElementById('userName').value = '';
+  document.getElementById('userEmail').value = '';
+  document.getElementById('userRole').value = 'staff';
+  document.getElementById('userSuffix').value = '';
+  document.getElementById('userFolder').value = '';
+  document.getElementById('userActive').checked = true;
+  document.getElementById('userActiveRow').style.display = 'none';
+  document.getElementById('userEmail').disabled = false;
+  document.getElementById('userModal').classList.remove('hidden');
+}
+
+function openEditUserModal(userId) {
+  var u = (APP.users || []).filter(function(x) { return x.user_id === userId; })[0];
+  if (!u) return;
+  APP.editingUserId = userId;
+  document.getElementById('userModalTitle').textContent = 'Edit user';
+  document.getElementById('userName').value = u.name || '';
+  document.getElementById('userEmail').value = u.email || '';
+  document.getElementById('userRole').value = u.role || 'staff';
+  document.getElementById('userSuffix').value = u.department_suffix || '';
+  document.getElementById('userFolder').value = u.drive_folder_id || '';
+  document.getElementById('userActive').checked = !!u.active;
+  document.getElementById('userActiveRow').style.display = '';
+  document.getElementById('userEmail').disabled = true;  // can't change email
+  document.getElementById('userModal').classList.remove('hidden');
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').classList.add('hidden');
+  APP.editingUserId = null;
+}
+
+function saveUser() {
+  var name = document.getElementById('userName').value.trim();
+  var email = document.getElementById('userEmail').value.trim();
+  var role = document.getElementById('userRole').value;
+  var suffix = document.getElementById('userSuffix').value.trim();
+  var folder = document.getElementById('userFolder').value.trim();
+  var active = document.getElementById('userActive').checked;
+
+  if (!name) { alert('Name is required.'); return; }
+  if (!APP.editingUserId && !email) { alert('Email is required.'); return; }
+
+  setSaving(true);
+  if (APP.editingUserId) {
+    google.script.run
+      .withSuccessHandler(function() {
+        setSaving(false);
+        closeUserModal();
+        loadUsers();
+      })
+      .withFailureHandler(function(err) { setSaving(false); alert('Save failed: ' + err.message); })
+      .updateUser(APP.editingUserId, {
+        name: name, role: role, department_suffix: suffix, drive_folder_id: folder, active: active
+      });
+  } else {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        setSaving(false);
+        closeUserModal();
+        if (result && result.email && result.email.sent === false) {
+          alert('User added, but the welcome email could not be sent.\n\nReason: ' + (result.email.error || 'Unknown') + '\n\nUse "Send invite" on their row to retry.');
+        }
+        loadUsers();
+      })
+      .withFailureHandler(function(err) { setSaving(false); alert('Add failed: ' + err.message); })
+      .addUserFromUI(name, email, role, suffix, folder);
+  }
+}
+
+function resendInvite(userId, btn) {
+  if (btn) { btn.textContent = 'Sending…'; btn.disabled = true; }
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (btn) { btn.textContent = 'Send invite'; btn.disabled = false; }
+      var info = result && result.email;
+      if (info && info.sent === false) {
+        alert('Could not send invite.\n\nReason: ' + (info.error || 'Unknown'));
+      } else if (info) {
+        alert('Invite queued.\n\nFrom: ' + (info.from || '?') +
+              '\nTo: ' + (info.to || '?') +
+              '\nMail quota left today: ' + (info.remaining_quota != null ? info.remaining_quota : '?') +
+              '\n\nIf the recipient doesn\'t see it, ask them to check Spam — it\'s sent from your personal Gmail with a display name.');
+      } else {
+        alert('Invite sent.');
+      }
+    })
+    .withFailureHandler(function(err) {
+      if (btn) { btn.textContent = 'Send invite'; btn.disabled = false; }
+      alert('Failed: ' + err.message);
+    })
+    .resendInvite(userId);
+}
+
+function toggleUserActive(userId, currentActive) {
+  var verb = currentActive ? 'Deactivate' : 'Activate';
+  if (!confirm(verb + ' this user?')) return;
+  google.script.run
+    .withSuccessHandler(loadUsers)
+    .withFailureHandler(function(err) { alert(verb + ' failed: ' + err.message); })
+    .setUserActive(userId, !currentActive);
+}
+
+// Looks the name up by id, so names with apostrophes can't break the button.
+function deleteUserClient(userId) {
+  var u = (APP.users || []).filter(function(x) { return x.user_id === userId; })[0];
+  var name = u ? u.name : 'this user';
+  if (!confirm('Permanently delete ' + name + '? They lose all access immediately. ' +
+               'Their past reconciliations are kept for audit history.')) return;
+  google.script.run
+    .withSuccessHandler(loadUsers)
+    .withFailureHandler(function(err) { alert('Delete failed: ' + err.message); })
+    .deleteUser(userId);
+}
+
+// ---- Override modal ----
+
+function openOverrideModal(txId) {
+  APP.overrideTxId = txId;
+  document.getElementById('overrideReason').value = '';
+  document.getElementById('overrideSearch').value = '';
+  document.getElementById('overrideModal').classList.remove('hidden');
+
+  if (APP.allCodes) {
+    populateOverrideCodes(APP.allCodes, '');
+    return;
+  }
+  document.getElementById('overrideCodeSelect').innerHTML = '<option disabled>Loading…</option>';
+  google.script.run
+    .withSuccessHandler(function(codes) {
+      APP.allCodes = codes;
+      populateOverrideCodes(codes, '');
+    })
+    .withFailureHandler(function(err) {
+      alert('Failed to load codes: ' + err.message);
+      closeOverrideModal();
+    })
+    .getAllBudgetCodes();
+}
+
+function closeOverrideModal() {
+  document.getElementById('overrideModal').classList.add('hidden');
+  APP.overrideTxId = null;
+}
+
+function populateOverrideCodes(codes, filter) {
+  var select = document.getElementById('overrideCodeSelect');
+  var q = (filter || '').toLowerCase();
+  var filtered = q ? codes.filter(function(c) {
+    return c.code.toLowerCase().indexOf(q) !== -1 || c.description.toLowerCase().indexOf(q) !== -1;
+  }) : codes;
+  select.innerHTML = filtered.map(function(c) {
+    return '<option value="' + esc(c.code) + '">[' + esc(c.department_suffix) + '] ' + esc(c.code) + ' — ' + esc(c.description) + '</option>';
+  }).join('');
+}
+
+function filterOverrideCodes(val) {
+  if (APP.allCodes) populateOverrideCodes(APP.allCodes, val);
+}
+
+function saveOverride() {
+  var txId = APP.overrideTxId;
+  var code = document.getElementById('overrideCodeSelect').value;
+  var reason = document.getElementById('overrideReason').value.trim();
+  if (!code) { alert('Please select a budget code.'); return; }
+  if (!reason) { alert('A reason is required for overrides.'); return; }
+
+  closeOverrideModal();
+  setSaving(true);
+
+  var row = document.getElementById('row-' + txId);
+  var cell = row ? row.querySelector('td:nth-child(7)') : null;
+  var flash = cell ? cell.querySelector('.flash-msg') : null;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      setSaving(false);
+      if (row) {
+        var sel = row.querySelector('select');
+        if (sel) {
+          if (!sel.querySelector('option[value="' + code + '"]')) {
+            var codeObj = APP.allCodes ? APP.allCodes.filter(function(c) { return c.code === code; })[0] : null;
+            var opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = codeObj ? (code + ' — ' + codeObj.description) : code;
+            sel.appendChild(opt);
+          }
+          sel.value = code;
+          sel.dataset.orig = code;
+        }
+      }
+      if (flash) { flash.textContent = 'Saved ✓'; flash.className = 'flash-msg flash-saved'; setTimeout(function() { flash.textContent = ''; }, 2000); }
+    })
+    .withFailureHandler(function(err) {
+      setSaving(false);
+      if (flash) { flash.textContent = 'Save failed'; flash.className = 'flash-msg flash-error'; setTimeout(function() { flash.textContent = ''; }, 3000); }
+      alert('Override failed: ' + err.message);
+    })
+    .saveTransaction(txId, 'budget_code', code, reason);
+}
+
+// ---- Month options helper ----
+
+function getMonthOptions() {
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var months = [];
+  var d = new Date();
+  for (var i = 0; i < 12; i++) {
+    months.push(monthNames[d.getMonth()] + ' ' + d.getFullYear());
+    d.setMonth(d.getMonth() - 1);
+  }
+  return months;
+}
+</script>

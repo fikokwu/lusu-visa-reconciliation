@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #F4F6F9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1A2B45; -webkit-font-smoothing: antialiased; }
+    a { color: #1CA0E3; } a:hover { color: #0A2A5E; }
+    .st { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 18px; align-items: center; padding: 15px 22px; border-top: 1px solid #EDF0F4; font-size: 18px; line-height: 1.4; }
+    .badge { justify-self: start; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 72px 32px; display: flex; flex-direction: column; gap: 20px; background: #F4F6F9;">
+  <div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 52px; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1CA0E3;">Finishing up</div>
+        <h2 style="margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; color: #0A2A5E;">Submit for review</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; font-size: 20px; line-height: 1.45;">
+        <p style="margin: 0;">Click <strong style="color: #0A2A5E;">Submit for review</strong> once every purchase has a code and a receipt. If anything is missing, you get a list of what to fix.</p>
+        <p style="margin: 0;">After you submit, the reconciliation is locked. You can still view it.</p>
+        <p style="margin: 0;">Follow its status on your Dashboard.</p>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px; box-shadow: 0 2px 8px rgba(10,42,94,.08); overflow: hidden;">
+      <div style="padding: 14px 22px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6B7A90; background: #EEF2F7;">What each status means</div>
+      <div class="st"><span class="badge" style="background: #ECEFF3; color: #5A6B82;">Draft</span><span>You're still working on it.</span></div>
+      <div class="st"><span class="badge" style="background: #1CA0E3; color: #FFFFFF;">Submitted</span><span>Waiting for Finance to review.</span></div>
+      <div class="st"><span class="badge" style="background: #0A2A5E; color: #FFFFFF;">Ed Review</span><span>Finance approved it. Waiting for the Executive Director.</span></div>
+      <div class="st"><span class="badge" style="background: #2E7D32; color: #FFFFFF;">Approved</span><span>Done. Filed in Approved Visa Recs, and you get an email.</span></div>
+      <div class="st"><span class="badge" style="background: #C62828; color: #FFFFFF;">Sent Back</span><span>Changes needed. The notes are in your email.</span></div>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6B7A90;">
+    <div style="display: flex; align-items: center; gap: 10px;"><img src="lusu-logo.png" alt="LUSU" style="height: 24px; width: auto;"><span>Visa Reconciliation · Staff training</span></div>
+    <span>12</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
